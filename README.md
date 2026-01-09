@@ -8,7 +8,7 @@ pnpm i
 
 ### 1) Start MySQL (required)
 
-Option A: Docker
+**Option A:** Docker
 
 ```bash
 docker run --name imessage-mysql \
@@ -17,7 +17,7 @@ docker run --name imessage-mysql \
   -p 3306:3306 -d mysql:8
 ```
 
-Option B: Homebrew MySQL
+**Option B:** Homebrew MySQL
 
 ```bash
 brew install mysql
@@ -41,10 +41,14 @@ WEB_PORT=3000
 WEB_BASE_URL=http://localhost:3000
 ```
 
-If your local MySQL user has a password, include it in the URL:
-
+IF your local MySQL user has a password, include it in the URL: (default should be no password, most likely above .env should work.)
 ```bash
 DATABASE_URL=mysql://root:<password>@localhost:3306/imessage_scheduler
+```
+
+Docker users should use the default Docker password:
+```bash
+DATABASE_URL=mysql://root:pass@localhost:3306/imessage_scheduler
 ```
 
 ### 3) Migrate + seed
@@ -58,7 +62,8 @@ pnpm db:seed
 ### 4) Run the app
 
 ```bash
-pnpm run dev // runs pnpm dev:web && pnpm dev:gateway
+# runs pnpm dev:web && pnpm dev:gateway
+pnpm run dev
 ```
 
 Seeded users:
