@@ -4,8 +4,60 @@
 
 ```bash
 pnpm i
+```
+
+### 1) Start MySQL (required)
+
+Option A: Docker
+
+```bash
+docker run --name imessage-mysql \
+  -e MYSQL_ROOT_PASSWORD=pass \
+  -e MYSQL_DATABASE=imessage_scheduler \
+  -p 3306:3306 -d mysql:8
+```
+
+Option B: Homebrew MySQL
+
+```bash
+brew install mysql
+brew services start mysql
+mysql -uroot -e "CREATE DATABASE imessage_scheduler;"
+```
+
+### 2) Configure env
+
+```bash
+cp .env.example .env
+```
+
+Example `.env`:
+
+```bash
+DATABASE_URL=mysql://root:pass@localhost:3306/imessage_scheduler
+GATEWAY_SECRET=dev-secret
+GATEWAY_PORT=4001
+WEB_PORT=3000
+WEB_BASE_URL=http://localhost:3000
+```
+
+### 3) Migrate + seed
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+```
+
+### 4) Run the app
+
+```bash
 pnpm run dev // runs pnpm dev:web && pnpm dev:gateway
 ```
+
+Seeded users:
+- user1@example.com (free) / password123
+- user2@example.com (paid) / password123
 
 ## Tech Stack Decisions
 
