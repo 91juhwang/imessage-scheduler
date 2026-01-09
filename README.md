@@ -34,11 +34,17 @@ cp .env.example .env
 Example `.env`:
 
 ```bash
-DATABASE_URL=mysql://root:pass@localhost:3306/imessage_scheduler
+DATABASE_URL=mysql://root@localhost:3306/imessage_scheduler
 GATEWAY_SECRET=dev-secret
 GATEWAY_PORT=4001
 WEB_PORT=3000
 WEB_BASE_URL=http://localhost:3000
+```
+
+If your local MySQL user has a password, include it in the URL:
+
+```bash
+DATABASE_URL=mysql://root:<password>@localhost:3306/imessage_scheduler
 ```
 
 ### 3) Migrate + seed

@@ -2,7 +2,7 @@ import "dotenv/config";
 import { eq } from "drizzle-orm";
 
 import { hashPassword } from "../auth/password";
-import { db } from "./index";
+import { db, pool } from "./index";
 import { userRateLimit, users } from "./schema";
 
 const seedUsers = [
@@ -71,12 +71,16 @@ async function ensureRateLimitRow(userId: string) {
 }
 
 async function seed() {
-  for (const entry of seedUsers) {
-    const userId = await ensureUser(entry);
-    await ensureRateLimitRow(userId);
-  }
+  try {
+    for (const entry of seedUsers) {
+      const userId = await ensureUser(entry);
+      await ensureRateLimitRow(userId);
+    }
 
-  console.log("Seeded users and rate limit rows.");
+    console.log("Seeded users and rate limit rows.");
+  } finally {
+    await pool.end();
+  }
 }
 
 seed().catch((error) => {
