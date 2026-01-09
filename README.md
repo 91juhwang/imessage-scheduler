@@ -4,7 +4,7 @@
 
 ```bash
 pnpm i
-pnpm run dev
+pnpm run dev // runs pnpm dev:web && pnpm dev:gateway
 ```
 
 ## Tech Stack Decisions
