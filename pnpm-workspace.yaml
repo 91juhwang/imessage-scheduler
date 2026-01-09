@@ -1,5 +1,7 @@
 packages:
   - .
+  - gateway
+  - packages/*
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver

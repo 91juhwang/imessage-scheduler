@@ -1,0 +1,8 @@
+{
+  "name": "@imessage-scheduler/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/index.ts"
+  }
+}
