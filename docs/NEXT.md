@@ -12,6 +12,7 @@ Codex must implement the system in **small, phased steps**. Each phase should be
 - If anything is ambiguous, stop and ask the human (see checkpoints).
 - Use shared types and zod schemas from `packages/shared`.
 - Receipt tracking DELIVERED/RECEIVED is required to attempt (best-effort) and must be documented.
+- UI state changes must be covered with Testing Library (user-centric behavior).
 
 After EACH phase, Codex must output:
 1) What changed (files + behavior)
@@ -696,4 +697,3 @@ Codex must stop and ask before finalizing:
 - C) allowed handle types (phone/email/both)
 - D) final rate limit numbers for free vs paid
 - E) chat.db schema differences if receipt tracking fails
-

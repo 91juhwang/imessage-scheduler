@@ -325,7 +325,9 @@ MVP timeline:
   - rate limit functions
   - FIFO selector query builder
   - zod validations & expected data types for any function returns
-  - testing library tests for UI interactions with any state changes
+- Testing Library UI tests:
+  - cover UI interactions with state changes (create/edit/move/cancel)
+  - keep tests focused on user-visible behavior
 - API tests:
   - auth endpoints
   - messages create/update/cancel/list
@@ -358,4 +360,3 @@ Worker:
 1) Confirm final numeric limits for free vs paid
 2) Timeline cancellation rendering: hide canceled or show as muted
 3) Receipt tracking viability: confirm chat.db path and schema on your macOS
-
