@@ -27,6 +27,7 @@ After EACH phase, Codex must output:
 ### phase 00 — Monorepo structure + tooling baseline
 Scope:
 - Establish repo layout and consistent tooling so later phases are easy.
+Status: [X] completed
 
 Tasks:
 - Ensure folders exist:
@@ -56,6 +57,7 @@ Manual verify:
 ### phase 01 — packages/shared: status enums + zod schemas + helpers
 Scope:
 - Centralize contracts and validation early to prevent drift.
+Status: [X] completed
 
 Tasks:
 - Create `packages/shared/src/status.ts`:
@@ -89,6 +91,7 @@ Manual verify:
 ### phase 02 — Web: env validation + db wiring (Drizzle)
 Scope:
 - Make web app able to connect to DB safely.
+Status: [X] completed
 
 Tasks:
 - Add `apps/web/src/env.ts` with zod:
@@ -114,6 +117,7 @@ Manual verify:
 ### phase 03 — DB schema: users + sessions + user_rate_limit + seed
 Scope:
 - Implement auth foundations early.
+Status: [X] completed
 
 Tasks:
 - Create Drizzle schema files (location: `apps/web/src/db/schema/*`):
@@ -145,6 +149,7 @@ Manual verify:
 ### phase 04 — DB schema: messages table + migrations
 Scope:
 - Single table that powers scheduling + queue.
+Status: [ ] in progress
 
 Tasks:
 - Add `messages` table with all fields from ARCHITECTURE.md.
