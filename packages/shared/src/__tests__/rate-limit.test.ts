@@ -27,7 +27,11 @@ describe("rate-limit helpers", () => {
 
   it("allows paid users more per hour", () => {
     const now = new Date("2025-01-01T10:00:00.000Z");
-    const row = { lastSentAt: null, windowStartedAt: null, sentInWindow: 29 };
+    const row = {
+      lastSentAt: new Date("2025-01-01T10:00:00.000Z"),
+      windowStartedAt: new Date("2025-01-01T10:00:00.000Z"),
+      sentInWindow: 29,
+    };
 
     const decision = evaluateRateLimit(now, row, true, config);
     expect(decision.allowed).toBe(true);

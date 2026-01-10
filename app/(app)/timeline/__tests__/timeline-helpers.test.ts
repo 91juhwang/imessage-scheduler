@@ -3,15 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   SLOT_LABELS,
   SLOT_MINUTES,
-  addDays,
   formatDateLabel,
-  formatDateKey,
   formatDateTimeInputValue,
   formatIsoWithOffset,
-  parseDateKey,
   parseDateTimeInputValue,
-  startOfDay,
 } from "../timeline-helpers";
+import { addDays, formatDateKey, parseDateKey, startOfDay } from "@/app/lib/date-utils";
 
 function formatOffsetForDate(date: Date) {
   const offsetMinutes = -date.getTimezoneOffset();
