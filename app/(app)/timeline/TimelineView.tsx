@@ -6,9 +6,7 @@ import { toast } from "sonner";
 import useSWR, { useSWRConfig } from "swr";
 
 import { Button } from "@/components/ui/Button";
-import { Calendar } from "@/components/ui/Calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 
 import {
   SLOT_LABELS,
@@ -21,6 +19,7 @@ import {
 } from "./timeline-helpers";
 import { TimelineMessageDialog } from "./_components/TimelineMessageDialog";
 import { TimelineSlotRow } from "./_components/TimelineSlotRow";
+import { DatePickerPopover } from "./_components/DatePickerPopover";
 import type { TimelineMessageItem } from "./timeline-types";
 
 const LOCAL_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -162,30 +161,20 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
         <div>
           <CardTitle>Timeline</CardTitle>
           <p className="text-sm text-indigo-500">{formatDateLabel(selectedDate)}</p>
+
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
+          <DatePickerPopover
+            selectedDate={selectedDate}
+            onSelectDate={(nextDate) => {
+              setSelectedDate(nextDate);
+              router.push(`/timeline?date=${formatDateKey(nextDate)}`);
+            }}
+          />
           <Button variant="outline" onClick={handlePrevDay}>
             Previous
           </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">Date</Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="p-0">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  if (!date) {
-                    return;
-                  }
-                  const nextDate = startOfDay(date);
-                  setSelectedDate(nextDate);
-                  router.push(`/timeline?date=${formatDateKey(nextDate)}`);
-                }}
-              />
-            </PopoverContent>
-          </Popover>
           <Button variant="outline" onClick={handleNextDay}>
             Next
           </Button>
