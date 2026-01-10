@@ -31,8 +31,8 @@ Status: [X] completed
 
 Tasks:
 - Ensure folders exist:
-  - `apps/web` (Next.js app)
-  - `apps/gateway` (Node service)
+  - `app` (Next.js App Router)
+  - `gateway` (Node service)
   - `packages/shared` (types/schemas)
 - Ensure root `package.json` workspace config (pnpm workspaces).
 - Add scripts (root):
@@ -264,9 +264,8 @@ Tests:
 Manual verify:
 - cancel reflects in DB.
 
-HUMAN CHECKPOINT A:
-- Confirm UI behavior for canceled messages:
-  - Default: hide on timeline, show in dashboard.
+HUMAN CHECKPOINT A: Resolved
+- Canceled messages are hidden on the timeline and visible in the dashboard.
 
 ---
 
@@ -285,6 +284,7 @@ Tasks:
     - RECEIVED => status=RECEIVED + received_at
     - FAILED => status=FAILED + last_error from payload
   - merge payload into receipt_correlation if present (json merge)
+- Apply rate limit update on SENT once per message (record `rateLimitApplied`).
 - Ensure idempotency:
   - if already at later state, ignore older updates (e.g., don’t downgrade)
 
@@ -332,15 +332,15 @@ Status: [X] completed
 
 Tasks:
 - Create `/timeline` page:
-  - week header with dates
-  - 24-hour grid
-  - fetch messages for visible week:
-    - from = startOfWeek UTC
-    - to = endOfWeek UTC
-- Render messages as blocks positioned within day/hour cell:
-  - simplest: place in the hour cell as a chip/list (MVP)
-- Provide week navigation:
-  - prev week / next week buttons
+  - day header with date picker
+- 48-slot grid (30-minute increments)
+  - fetch messages for the selected day:
+    - from = startOfDay UTC
+    - to = endOfDay UTC
+- Render messages as blocks positioned within time slot:
+  - place in the slot cell as a chip/list (MVP)
+- Provide day navigation:
+  - prev day / next day buttons
 - Show status indicator on each block (color + label)
 
 Manual verify:
@@ -384,7 +384,7 @@ Scope:
 
 Tasks:
 - Drag-to-move:
-  - drag block to another hour/day cell
+  - drag block to another slot cell
   - call PATCH /api/messages/:id updating scheduled time
 - Click-to-edit:
   - click block opens modal prefilled
@@ -392,7 +392,9 @@ Tasks:
   - save uses PATCH
 - Cancel:
   - cancel button in modal calls POST cancel endpoint
-  - timeline hides or mutes canceled messages (per checkpoint A)
+  - timeline hides canceled messages
+- Duplicate:
+  - duplicate button creates a copy at the same time/recipient/body
 
 Tests:
 - Playwright:
@@ -403,11 +405,8 @@ Tests:
 Manual verify:
 - Drag feels acceptable and doesn’t misplace time.
 
-HUMAN CHECKPOINT B:
-- Confirm whether timeline is:
-  - hour-slot only (MVP) OR
-  - supports 15/30 minute increments
-Default: hour-slot only for take-home simplicity.
+HUMAN CHECKPOINT B: Resolved
+- Timeline uses 30-minute slots.
 
 ---
 
@@ -494,11 +493,8 @@ Tests:
 Manual verify (required):
 - Send to your own iMessage handle and confirm it appears in Messages.
 
-HUMAN CHECKPOINT C:
-- Confirm whether your “to_handle” will be:
-  - phone numbers only,
-  - email only,
-  - or both (default: both allowed).
+HUMAN CHECKPOINT C: Resolved
+- Recipients are US phone numbers only.
 
 ---
 
@@ -583,12 +579,9 @@ Manual verify:
 - Login as user1 create 2 messages now -> only 1 sends
 - Login as user2 create multiple -> more sends.
 
-HUMAN CHECKPOINT D (required):
-- Confirm final rate limit numbers:
-  - FREE_MIN_INTERVAL_SECONDS
-  - PAID_MIN_INTERVAL_SECONDS
-  - FREE_MAX_PER_HOUR
-  - PAID_MAX_PER_HOUR
+HUMAN CHECKPOINT D: Resolved
+- Defaults are FREE_MIN_INTERVAL_SECONDS=0, PAID_MIN_INTERVAL_SECONDS=0,
+  FREE_MAX_PER_HOUR=2, PAID_MAX_PER_HOUR=30.
 
 ---
 
@@ -604,11 +597,12 @@ Tasks:
 - Implement correlation attempt (best-effort):
   - locate chat.db path: `~/Library/Messages/chat.db` (likely)
   - open read-only sqlite connection
-  - attempt to find message row for handle within time window
+  - attempt to find message row by handle + exact body + is_from_me within a ±5 minute window
   - store identifiers into receipt_correlation (messageRowId, chatGuid)
 - If correlation fails:
   - store receipt_correlation.notes with reason
   - continue (do not fail message)
+- Retry correlation (8 attempts, 2s delay) when no match is found.
 
 Tests:
 - Unit test correlation function with mocked sqlite layer
@@ -628,13 +622,14 @@ HUMAN CHECKPOINT E (required if correlation fails):
 ### phase 19 — Receipt tracking v2: DELIVERED and RECEIVED detection + callbacks
 Scope:
 - Required attempt.
+Status: [X] completed
 
 Tasks:
 - Based on correlated row, poll for:
   - delivery indicator
   - read/received indicator
 - Poll loop:
-  - interval (e.g., 10s) for up to N minutes/hours
+  - interval 10s, timeout 30 minutes
 - On delivery/read detection:
   - call web callback with DELIVERED/RECEIVED
   - update timestamps
@@ -643,6 +638,7 @@ Tasks:
   - don’t spam callbacks (send only once per status)
 - Add timeout behavior:
   - if not detected in time, leave as SENT and record note in receipt_correlation
+- Use schema-aware detection of delivery/read columns when available.
 
 Tests:
 - Unit test poll loop state machine with mocks

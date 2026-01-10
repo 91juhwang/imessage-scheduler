@@ -9,6 +9,9 @@ This document is the Source of Truth (SOT) for the **local-only iMessage Schedul
 
 Everything runs **locally on one macOS machine** over `localhost`.
 
+Runtime requirements:
+- Node.js 22.x (native sqlite module build)
+
 ---
 
 ## Confirmed Requirements
@@ -24,6 +27,7 @@ Everything runs **locally on one macOS machine** over `localhost`.
 - Dashboard shows queue/history and failures
 - Tests for endpoints and key UI functionality
 - README explains architecture, how to run locally, and tradeoffs
+ - **Recipients are US phone numbers only** (normalized to E.164)
 
 ---
 
@@ -49,7 +53,7 @@ Worker:
 ### 1) Web App (Next.js)
 Responsibilities:
 - Simple multi-user fake auth (seed user1 free, user2 paid)
-- Timeline grid scheduling UI
+- Timeline grid scheduling UI (single day, 30-minute slots)
 - Dashboard UI
 - API routes:
   - auth
@@ -69,6 +73,7 @@ Responsibilities:
   - lock + mark SENDING
   - send
   - callback to web app with SENT/FAILED
+- Worker updates `user_rate_limit` on successful send
 - Receipt tracking attempt:
   - correlate message in Messages storage (likely chat.db)
   - detect and callback DELIVERED/RECEIVED
@@ -216,14 +221,14 @@ Per signed-in user’s plan:
 Two checks:
 
 ### A) Minimum interval between sends
-- FREE_MIN_INTERVAL_SECONDS (default 3600)
-- PAID_MIN_INTERVAL_SECONDS (default 300)
+- FREE_MIN_INTERVAL_SECONDS (default 0)
+- PAID_MIN_INTERVAL_SECONDS (default 0)
 
 If last_sent_at exists and now - last_sent_at < min_interval => cannot send.
 
 ### B) Max sends per hour window
-- FREE_MAX_PER_HOUR (default 1)
-- PAID_MAX_PER_HOUR (default 10)
+- FREE_MAX_PER_HOUR (default 2)
+- PAID_MAX_PER_HOUR (default 30)
 
 If now > window_started_at + 1 hour => reset:
 - window_started_at = now
@@ -284,6 +289,9 @@ Body:
 - payload?: json
 
 Web app updates messages row accordingly.
+On SENT:
+- Web app applies rate limit bookkeeping once per message and records
+  `receiptCorrelation.rateLimitApplied=true`.
 
 ---
 
@@ -295,9 +303,13 @@ Approach:
   - compute bodyHash and store in receipt_correlation
 - Correlate in Messages storage (likely `~/Library/Messages/chat.db`)
   - gateway reads chat.db directly with sqlite (requires Full Disk Access for the gateway process)
-  - locate message row for handle in a time window
+  - locate message row by handle + exact body + is_from_me within a ±5 minute window
   - store messageRowId/chatGuid if found
+- Retry correlation up to 8 attempts (2s delay) when no match is found
 - Poll for fields indicating delivered/read if available
+  - uses `is_delivered` / `date_delivered` / `is_read` / `date_read` when present
+  - polling queries inspect available columns via `PRAGMA table_info(message)`
+  - polling interval default 10s, timeout default 30 minutes
 - When detected, call gateway/status callback with DELIVERED/RECEIVED
 
 If schema differs:
@@ -310,11 +322,12 @@ If schema differs:
 ### Timeline Grid (Required)
 MVP timeline:
 - Select a day (calendar)
-- 24 rows for hours
+- 48 rows for 30-minute slots
 - Drag-to-create message at a slot
 - Drag-to-move existing message
 - Click to edit/cancel
-- Multiple messages can exist in same hour slot
+- Duplicate button to clone a scheduled message
+- Multiple messages can exist in the same slot
 
 ### Dashboard (Required)
 - Filter by status + date range
@@ -354,20 +367,24 @@ Required:
 - GATEWAY_SECRET
 
 Rate limits defaults:
-- FREE_MIN_INTERVAL_SECONDS=3600
-- PAID_MIN_INTERVAL_SECONDS=300
-- FREE_MAX_PER_HOUR=1
-- PAID_MAX_PER_HOUR=10
+- FREE_MIN_INTERVAL_SECONDS=0
+- PAID_MIN_INTERVAL_SECONDS=0
+- FREE_MAX_PER_HOUR=2
+- PAID_MAX_PER_HOUR=30
 
 Worker:
 - WORKER_ENABLED=true
 - WORKER_POLL_INTERVAL_MS=2000
 - MAX_ATTEMPTS=5
 - BASE_BACKOFF_SECONDS=30
+- RECEIPT_POLL_INTERVAL_MS=10000
+- RECEIPT_POLL_TIMEOUT_MS=1800000
 
 ---
 
-## Human Decision Points (Codex must pause)
-1) Confirm final numeric limits for free vs paid
-2) Timeline cancellation rendering: hide canceled or show as muted
-3) Receipt tracking viability: confirm chat.db path and schema on your macOS
+## Resolved Decisions
+- Rate limit defaults are 0/0 min interval and 2/30 max per hour.
+- Timeline hides canceled messages.
+- Timeline uses 30-minute slots.
+- Recipients are US phone numbers only.
+- Receipt tracking uses `~/Library/Messages/chat.db` with schema-aware polling.
