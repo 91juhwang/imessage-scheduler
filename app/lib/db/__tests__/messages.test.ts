@@ -1,19 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
-
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 
 describe.skipIf(!hasDatabase)("messages table", () => {
   it("inserts a queued message with defaults", async () => {
     process.env.GATEWAY_SECRET ||= "test-secret";
 
-    const { db } = await import("../index");
-    const { messages, users } = await import("../schema");
+    const { createUser } = await import("../models/user.model");
+    const { createMessage, getMessageById } = await import("../models/message.model");
 
     const userId = crypto.randomUUID();
     const messageId = crypto.randomUUID();
 
-    await db.insert(users).values({
+    await createUser({
       id: userId,
       email: `test-${userId}@example.com`,
       passwordHash: "hash",
@@ -21,7 +19,7 @@ describe.skipIf(!hasDatabase)("messages table", () => {
       createdAt: new Date(),
     });
 
-    await db.insert(messages).values({
+    await createMessage({
       id: messageId,
       userId,
       toHandle: "user@example.com",
@@ -30,16 +28,9 @@ describe.skipIf(!hasDatabase)("messages table", () => {
       timezone: "UTC",
     });
 
-    const row = await db
-      .select({
-        status: messages.status,
-        attemptCount: messages.attemptCount,
-      })
-      .from(messages)
-      .where(eq(messages.id, messageId))
-      .limit(1);
+    const row = await getMessageById(messageId);
 
-    expect(row[0]?.status).toBe("QUEUED");
-    expect(row[0]?.attemptCount).toBe(0);
+    expect(row?.status).toBe("QUEUED");
+    expect(row?.attemptCount).toBe(0);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getSessionIdFromRequest, SESSION_COOKIE_NAME } from "../session";
+import { getSessionIdFromRequest, SESSION_COOKIE_NAME } from "../cookies";
 
 describe("session cookies", () => {
   it("reads session id from request cookie header", async () => {

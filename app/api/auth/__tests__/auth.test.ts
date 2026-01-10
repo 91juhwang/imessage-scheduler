@@ -13,16 +13,15 @@ function extractSessionCookie(setCookie: string | null) {
 
 describe.skipIf(!hasDatabase)("auth api", () => {
   it("logs in and returns session", async () => {
-    const { db } = await import("@/app/lib/db");
-    const { users } = await import("@/app/lib/db/schema");
     const { hashPassword } = await import("@/app/lib/auth/password");
+    const { createUser } = await import("@/app/lib/db/models/user.model");
     const { POST } = await import("@/app/api/auth/login/route");
 
     const email = `test-${crypto.randomUUID()}@example.com`;
     const password = "password123";
     const passwordHash = await hashPassword(password);
 
-    await db.insert(users).values({
+    await createUser({
       id: crypto.randomUUID(),
       email,
       passwordHash,
@@ -48,9 +47,8 @@ describe.skipIf(!hasDatabase)("auth api", () => {
   });
 
   it("supports me and logout", async () => {
-    const { db } = await import("@/app/lib/db");
-    const { users } = await import("@/app/lib/db/schema");
     const { hashPassword } = await import("@/app/lib/auth/password");
+    const { createUser } = await import("@/app/lib/db/models/user.model");
     const { POST: login } = await import("@/app/api/auth/login/route");
     const { GET: me } = await import("@/app/api/auth/me/route");
     const { POST: logout } = await import("@/app/api/auth/logout/route");
@@ -59,7 +57,7 @@ describe.skipIf(!hasDatabase)("auth api", () => {
     const password = "password123";
     const passwordHash = await hashPassword(password);
 
-    await db.insert(users).values({
+    await createUser({
       id: crypto.randomUUID(),
       email,
       passwordHash,

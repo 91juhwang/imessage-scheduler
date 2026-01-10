@@ -1,9 +1,8 @@
 import "dotenv/config";
-import { eq } from "drizzle-orm";
-
 import { hashPassword } from "../auth/password";
-import { db, pool } from "./index";
-import { userRateLimit, users } from "./schema";
+import { pool } from "./index";
+import { createRateLimitRow, getRateLimitByUserId } from "./models/rate_limit.model";
+import { createUser, getUserByEmail } from "./models/user.model";
 
 const seedUsers = [
   {
@@ -27,20 +26,15 @@ async function ensureUser({
   password: string;
   paidUser: boolean;
 }) {
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-
-  if (existing.length > 0) {
-    return existing[0].id;
+  const existing = await getUserByEmail(email);
+  if (existing) {
+    return existing.id;
   }
 
   const id = crypto.randomUUID();
   const passwordHash = await hashPassword(password);
 
-  await db.insert(users).values({
+  await createUser({
     id,
     email,
     passwordHash,
@@ -52,17 +46,12 @@ async function ensureUser({
 }
 
 async function ensureRateLimitRow(userId: string) {
-  const existing = await db
-    .select({ userId: userRateLimit.userId })
-    .from(userRateLimit)
-    .where(eq(userRateLimit.userId, userId))
-    .limit(1);
-
-  if (existing.length > 0) {
+  const existing = await getRateLimitByUserId(userId);
+  if (existing) {
     return;
   }
 
-  await db.insert(userRateLimit).values({
+  await createRateLimitRow({
     userId,
     lastSentAt: null,
     windowStartedAt: null,

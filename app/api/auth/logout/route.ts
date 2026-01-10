@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { clearSessionCookie, deleteSession, getSessionIdFromRequest } from "@/app/lib/auth/session";
+import { getSessionIdFromRequest } from "@/app/lib/auth/cookies";
+import { clearSessionCookie, deleteSession } from "@/app/lib/auth/session";
 
 export async function POST(request: Request) {
   const sessionId = await getSessionIdFromRequest(request);

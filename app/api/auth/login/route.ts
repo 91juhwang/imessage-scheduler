@@ -6,9 +6,7 @@ import {
   createSession,
   setSessionCookie,
 } from "@/app/lib/auth/session";
-import { db } from "@/app/lib/db";
-import { users } from "@/app/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getUserByEmail } from "@/app/lib/db/models/user.model";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -20,18 +18,7 @@ export async function POST(request: Request) {
 
   const { email, password } = parsed.data;
 
-  const userRows = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      passwordHash: users.passwordHash,
-      paidUser: users.paidUser,
-    })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-
-  const user = userRows[0];
+  const user = await getUserByEmail(email);
   if (!user) {
     return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
   }

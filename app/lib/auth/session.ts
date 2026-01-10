@@ -1,43 +1,20 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 
-import { db } from "../db";
-import { sessions, users } from "../db/schema";
-
-export const SESSION_COOKIE_NAME = "sid";
+import { getSessionIdFromRequest, SESSION_COOKIE_NAME } from "./cookies";
+import {
+  createSessionRow,
+  deleteSessionById,
+  getSessionById,
+} from "../db/models/session.model";
+import { getUserById } from "../db/models/user.model";
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
-
-function getSessionIdFromCookieHeader(cookieHeader: string | null) {
-  if (!cookieHeader) {
-    return null;
-  }
-
-  const parts = cookieHeader.split(";").map((part) => part.trim());
-  for (const part of parts) {
-    if (part.startsWith(`${SESSION_COOKIE_NAME}=`)) {
-      return part.slice(`${SESSION_COOKIE_NAME}=`.length);
-    }
-  }
-
-  return null;
-}
-
-export async function getSessionIdFromRequest(request?: Request) {
-  if (request) {
-    return getSessionIdFromCookieHeader(request.headers.get("cookie"));
-  }
-
-  const cookieStore = await cookies();
-  return cookieStore.get(SESSION_COOKIE_NAME)?.value ?? null;
-}
 
 export async function createSession(userId: string) {
   const sessionId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
-  await db.insert(sessions).values({
+  await createSessionRow({
     id: sessionId,
     userId,
     expiresAt,
@@ -54,33 +31,25 @@ export async function getUserFromRequest(request?: Request) {
     return null;
   }
 
-  const result = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      paidUser: users.paidUser,
-      sessionId: sessions.id,
-      expiresAt: sessions.expiresAt,
-    })
-    .from(sessions)
-    .innerJoin(users, eq(sessions.userId, users.id))
-    .where(eq(sessions.id, sessionId))
-    .limit(1);
-
-  const row = result[0];
-  if (!row) {
+  const session = await getSessionById(sessionId);
+  if (!session) {
     return null;
   }
 
-  if (row.expiresAt <= new Date()) {
-    await db.delete(sessions).where(eq(sessions.id, row.sessionId));
+  if (session.expiresAt <= new Date()) {
+    await deleteSessionById(session.id);
+    return null;
+  }
+
+  const user = await getUserById(session.userId);
+  if (!user) {
     return null;
   }
 
   return {
-    id: row.id,
-    email: row.email,
-    paidUser: row.paidUser,
+    id: user.id,
+    email: user.email,
+    paidUser: user.paidUser,
   };
 }
 
@@ -93,7 +62,7 @@ export async function requireUser(request?: Request) {
 }
 
 export async function deleteSession(sessionId: string) {
-  await db.delete(sessions).where(eq(sessions.id, sessionId));
+  await deleteSessionById(sessionId);
 }
 
 export function setSessionCookie(
