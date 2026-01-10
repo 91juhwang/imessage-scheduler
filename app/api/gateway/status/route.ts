@@ -21,6 +21,7 @@ type StatusKey = keyof typeof STATUS_ORDER;
 
 type StatusPayload = Record<string, unknown> | undefined;
 
+// receiptCorrelation payload merger --> for any additional data from gateway
 function mergePayload(
   existing: Record<string, unknown> | null,
   payload: StatusPayload,

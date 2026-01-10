@@ -273,6 +273,7 @@ HUMAN CHECKPOINT A:
 ### phase 08 — Web gateway callback route (status updates)
 Scope:
 - Gateway must be able to update message status.
+Status: [X] completed
 
 Tasks:
 - `POST /api/gateway/status`

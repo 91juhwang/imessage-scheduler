@@ -4,7 +4,7 @@ import mysql, { type Pool } from "mysql2/promise";
 let pool: Pool | null = null;
 let db: ReturnType<typeof drizzle> | null = null;
 
-function initDb() {
+function initDb(): ReturnType<typeof drizzle> {
   if (db) {
     return db;
   }
@@ -19,11 +19,11 @@ function initDb() {
   return db;
 }
 
-export function getDb() {
+export function getDb(): ReturnType<typeof drizzle> {
   return initDb();
 }
 
-export function getPool() {
+export function getPool(): Pool {
   initDb();
   return pool!;
 }
