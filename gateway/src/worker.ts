@@ -6,7 +6,10 @@ import type { GatewayEnv } from "./env";
 import { sendIMessage } from "./applescript";
 import { postGatewayStatus } from "./callback";
 import { getDb } from "./db";
-import { attemptReceiptCorrelation, pollForReceiptUpdates } from "./receipt";
+import {
+  attemptReceiptCorrelationWithRetry,
+  pollForReceiptUpdates,
+} from "./receipt";
 import { messages, userRateLimit, users } from "./schema";
 
 type MessageRow = {
@@ -355,7 +358,7 @@ async function runOnce(env: GatewayEnv) {
     try {
       await sendIMessage(candidate.toHandle, candidate.body);
       const sentAt = new Date();
-      const correlation = await attemptReceiptCorrelation({
+      const correlation = await attemptReceiptCorrelationWithRetry({
         handle: candidate.toHandle,
         body: candidate.body,
         sentAt,

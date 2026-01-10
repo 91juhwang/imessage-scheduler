@@ -31,6 +31,10 @@ type ReceiptDeps = {
   fileExists?: (dbPath: string) => boolean;
 };
 
+type ReceiptRetryDeps = ReceiptDeps & {
+  sleep?: (ms: number) => Promise<void>;
+};
+
 type ReceiptPollDeps = ReceiptDeps & {
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
@@ -46,6 +50,8 @@ type ReceiptSnapshot = {
 
 const APPLE_EPOCH_SECONDS = 978307200;
 const WINDOW_MS = 5 * 60 * 1000;
+const CORRELATION_RETRY_ATTEMPTS = 8;
+const CORRELATION_RETRY_DELAY_MS = 2000;
 const RECEIPT_POLL_INTERVAL_MS = 10_000;
 const RECEIPT_POLL_TIMEOUT_MS = 30 * 60 * 1000;
 
@@ -273,6 +279,42 @@ async function attemptReceiptCorrelation(
   }
 }
 
+async function attemptReceiptCorrelationWithRetry(
+  input: {
+    handle: string;
+    body: string;
+    sentAt: Date;
+    chatDbPath?: string;
+  },
+  deps: ReceiptRetryDeps = {},
+  options: { attempts?: number; delayMs?: number } = {},
+): Promise<ReceiptCorrelation> {
+  const attempts = Math.max(options.attempts ?? CORRELATION_RETRY_ATTEMPTS, 1);
+  const delayMs = Math.max(options.delayMs ?? CORRELATION_RETRY_DELAY_MS, 0);
+  const sleep =
+    deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const result = await attemptReceiptCorrelation(input, deps);
+    if (result.messageRowId || result.chatGuid) {
+      return result;
+    }
+    if (result.notes !== "no_match") {
+      return result;
+    }
+    if (attempt < attempts && delayMs > 0) {
+      console.log("[gateway-receipt] retrying correlation", {
+        attempt,
+        delayMs,
+        handle: input.handle,
+      });
+      await sleep(delayMs);
+    }
+  }
+
+  return attemptReceiptCorrelation(input, deps);
+}
+
 async function pollForReceiptUpdates(
   input: {
     messageId: string;
@@ -349,5 +391,10 @@ async function pollForReceiptUpdates(
   });
 }
 
-export { attemptReceiptCorrelation, getChatDbPath, pollForReceiptUpdates };
+export {
+  attemptReceiptCorrelation,
+  attemptReceiptCorrelationWithRetry,
+  getChatDbPath,
+  pollForReceiptUpdates,
+};
 export type { ReceiptCorrelation };
