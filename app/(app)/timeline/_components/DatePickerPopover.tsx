@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Calendar } from "@/components/ui/Calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 
-import { startOfDay } from "../timeline-helpers";
+import { startOfDay } from "@/app/lib/date-utils";
 
 type DatePickerPopoverProps = {
   selectedDate: Date;

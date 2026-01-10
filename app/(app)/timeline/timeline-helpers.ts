@@ -15,18 +15,6 @@ function padTime(value: number) {
   return value.toString().padStart(2, "0");
 }
 
-function startOfDay(date: Date) {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  return start;
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
 function formatDateTimeInputValue(date: Date) {
   return [
     date.getFullYear(),
@@ -100,37 +88,14 @@ function parseTimeInputValue(baseDate: Date, value: string) {
   return scheduled;
 }
 
-function formatDateKey(date: Date) {
-  return [
-    date.getFullYear(),
-    padTime(date.getMonth() + 1),
-    padTime(date.getDate()),
-  ].join("-");
-}
-
-function parseDateKey(value: string | null) {
-  if (!value) {
-    return null;
-  }
-  const [year, month, day] = value.split("-").map(Number);
-  if ([year, month, day].some((entry) => Number.isNaN(entry))) {
-    return null;
-  }
-  return new Date(year, month - 1, day, 0, 0, 0, 0);
-}
-
 export {
   SLOT_COUNT,
   SLOT_LABELS,
   SLOT_MINUTES,
-  addDays,
   formatDateLabel,
-  formatDateKey,
   formatTimeInputValue,
   formatDateTimeInputValue,
   formatIsoWithOffset,
-  parseDateKey,
   parseDateTimeInputValue,
   parseTimeInputValue,
-  startOfDay,
 };

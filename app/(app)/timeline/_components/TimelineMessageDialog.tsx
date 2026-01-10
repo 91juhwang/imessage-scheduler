@@ -24,10 +24,12 @@ import { Textarea } from "@/components/ui/Textarea";
 
 import {
   formatDateKey,
-  formatTimeInputValue,
   parseDateKey,
-  parseTimeInputValue,
   startOfDay,
+} from "@/app/lib/date-utils";
+import {
+  formatTimeInputValue,
+  parseTimeInputValue,
 } from "../timeline-helpers";
 
 type TimelineMessageDialogProps = {

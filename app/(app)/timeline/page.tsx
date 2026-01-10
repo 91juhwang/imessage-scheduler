@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 
 import { getUserFromRequest } from "@/app/lib/auth/session";
 import { listMessagesForUser } from "@/app/lib/db/models/message.model";
+import { addDays, parseDateKey, startOfDay } from "@/app/lib/date-utils";
 import { TimelineView } from "./TimelineView";
-import { addDays, parseDateKey, startOfDay } from "./timeline-helpers";
 
 type TimelinePageProps = {
   searchParams?: Promise<{ date?: string }>;

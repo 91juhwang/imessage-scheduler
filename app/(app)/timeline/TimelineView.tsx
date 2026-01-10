@@ -11,12 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
   SLOT_LABELS,
   SLOT_MINUTES,
-  addDays,
   formatDateLabel,
-  formatDateKey,
   formatIsoWithOffset,
-  startOfDay,
 } from "./timeline-helpers";
+import { addDays, formatDateKey, startOfDay } from "@/app/lib/date-utils";
 import { TimelineMessageDialog } from "./_components/TimelineMessageDialog";
 import { TimelineSlotRow } from "./_components/TimelineSlotRow";
 import { DatePickerPopover } from "./_components/DatePickerPopover";
