@@ -67,6 +67,15 @@ pnpm db:seed
 pnpm run dev
 ```
 
+#### 5) Enable Full Disk Access (for receipt correlation)
+
+The gateway reads Messages.app data from `~/Library/Messages/chat.db` to attempt delivery/read correlation.
+
+On macOS:
+- System Settings → Privacy & Security → Full Disk Access
+- Add your terminal app (Terminal / iTerm) or your IDE (VS Code) and enable it
+- Restart the terminal/IDE, then re-run the gateway
+
 Seeded users:
 - user1@example.com (free) / password123
 - user2@example.com (paid) / password123
@@ -93,4 +102,3 @@ Seeded users:
 
 - `./db`
 - `./app/api/` API endpoints (auth, messages,  )
-
