@@ -4,8 +4,12 @@ import { GatewayStatusCallbackSchema } from "@imessage-scheduler/shared";
 import {
   getMessageById,
   type UpdateMessagePatch,
-  updateMessageById,
 } from "@/app/lib/db/models/message.model";
+import { applySend } from "@imessage-scheduler/shared";
+import { getRateLimitConfig } from "@/app/lib/rate-limit";
+import { getDb } from "@/app/lib/db";
+import { messages, userRateLimit, users } from "@/app/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 const STATUS_ORDER = {
   QUEUED: 0,
@@ -48,6 +52,78 @@ function shouldApplyStatus(current: StatusKey, incoming: StatusKey) {
   return false;
 }
 
+type RateLimitUpdateResult = {
+  shouldApply: boolean;
+  update: UpdateMessagePatch | null;
+};
+
+async function applyRateLimitOnSent(
+  db: ReturnType<typeof getDb>,
+  message: {
+    id: string;
+    userId: string;
+    receiptCorrelation: Record<string, unknown> | null;
+  },
+  now: Date,
+): Promise<RateLimitUpdateResult> {
+  const alreadyApplied = Boolean(message.receiptCorrelation?.rateLimitApplied);
+  if (alreadyApplied) {
+    return { shouldApply: false, update: null };
+  }
+
+  const [userRow] = await db
+    .select({ paidUser: users.paidUser })
+    .from(users)
+    .where(eq(users.id, message.userId))
+    .limit(1);
+  const paidUser = userRow?.paidUser ?? false;
+
+  const [existingRow] = await db
+    .select({
+      lastSentAt: userRateLimit.lastSentAt,
+      windowStartedAt: userRateLimit.windowStartedAt,
+      sentInWindow: userRateLimit.sentInWindow,
+    })
+    .from(userRateLimit)
+    .where(eq(userRateLimit.userId, message.userId))
+    .limit(1);
+
+  const rateRow = existingRow ?? {
+    lastSentAt: null,
+    windowStartedAt: null,
+    sentInWindow: 0,
+  };
+  const config = getRateLimitConfig();
+  const nextState = applySend(now, rateRow, paidUser, config);
+
+  if (!existingRow) {
+    await db.insert(userRateLimit).values({
+      userId: message.userId,
+      lastSentAt: nextState.lastSentAt,
+      windowStartedAt: nextState.windowStartedAt,
+      sentInWindow: nextState.sentInWindow,
+    });
+  } else {
+    await db
+      .update(userRateLimit)
+      .set({
+        lastSentAt: nextState.lastSentAt,
+        windowStartedAt: nextState.windowStartedAt,
+        sentInWindow: nextState.sentInWindow,
+      })
+      .where(eq(userRateLimit.userId, message.userId));
+  }
+
+  return {
+    shouldApply: true,
+    update: {
+      receiptCorrelation: mergePayload(message.receiptCorrelation, {
+        rateLimitApplied: true,
+      }),
+    },
+  };
+}
+
 function readGatewaySecret(request: Request) {
   return request.headers.get("X-Gateway-Secret");
 }
@@ -77,17 +153,13 @@ export async function POST(request: Request) {
 
   const incomingStatus = parsed.data.status as StatusKey;
   const currentStatus = message.status as StatusKey;
-
-  if (!shouldApplyStatus(currentStatus, incomingStatus)) {
-    return NextResponse.json({ ok: true, ignored: true });
-  }
+  const shouldApply = shouldApplyStatus(currentStatus, incomingStatus);
 
   const now = new Date();
   const updates: UpdateMessagePatch = {
-    status: incomingStatus,
     updatedAt: now,
     receiptCorrelation: mergePayload(
-      message.receiptCorrelation,
+      (message.receiptCorrelation as Record<string, unknown> | null) ?? null,
       parsed.data.payload,
     ),
   };
@@ -105,7 +177,46 @@ export async function POST(request: Request) {
     updates.lastError = typeof errorPayload === "string" ? errorPayload : null;
   }
 
-  await updateMessageById(message.id, updates);
+  if (shouldApply) {
+    updates.status = incomingStatus;
+  }
 
-  return NextResponse.json({ ok: true });
+  const applyRateLimit =
+    incomingStatus === "SENT" &&
+    currentStatus !== "FAILED" &&
+    currentStatus !== "CANCELED";
+
+  const db = getDb();
+  let didApply = false;
+
+  const rateLimitUpdate = applyRateLimit
+    ? await applyRateLimitOnSent(
+        db,
+        {
+          id: message.id,
+          userId: message.userId,
+          receiptCorrelation:
+            (message.receiptCorrelation as Record<string, unknown> | null) ?? null,
+        },
+        now,
+      )
+    : { shouldApply: false, update: null };
+
+  if (rateLimitUpdate.update?.receiptCorrelation) {
+    updates.receiptCorrelation = mergePayload(
+      (updates.receiptCorrelation as Record<string, unknown> | null) ?? null,
+      rateLimitUpdate.update.receiptCorrelation,
+    );
+  }
+
+  await db.transaction(async (tx) => {
+    if (!shouldApply && !rateLimitUpdate.shouldApply) {
+      return;
+    }
+
+    await tx.update(messages).set(updates).where(eq(messages.id, message.id));
+    didApply = true;
+  });
+
+  return NextResponse.json({ ok: true, ignored: !didApply });
 }
