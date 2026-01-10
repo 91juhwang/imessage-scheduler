@@ -1,12 +1,25 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql, { type Pool } from "mysql2/promise";
 
-let pool: Pool | null = null;
-let db: ReturnType<typeof drizzle> | null = null;
+type DbClient = ReturnType<typeof drizzle<Record<string, never>, Pool>>;
 
-function initDb(): ReturnType<typeof drizzle> {
-  if (db) {
-    return db;
+type DbStore = {
+  pool: Pool | null;
+  db: DbClient | null;
+};
+
+const globalStore = globalThis as typeof globalThis & {
+  __imessageDbStore?: DbStore;
+};
+
+const store = globalStore.__imessageDbStore ?? { pool: null, db: null };
+if (!globalStore.__imessageDbStore) {
+  globalStore.__imessageDbStore = store;
+}
+
+function initDb(): DbClient {
+  if (store.db) {
+    return store.db;
   }
 
   const databaseUrl = process.env.DATABASE_URL;
@@ -14,16 +27,20 @@ function initDb(): ReturnType<typeof drizzle> {
     throw new Error("DATABASE_URL is required");
   }
 
-  pool = mysql.createPool({ uri: databaseUrl });
-  db = drizzle(pool);
-  return db;
+  store.pool = mysql.createPool({
+    uri: databaseUrl,
+    connectionLimit: 10,
+    waitForConnections: true,
+  });
+  store.db = drizzle(store.pool);
+  return store.db;
 }
 
-export function getDb(): ReturnType<typeof drizzle> {
+export function getDb(): DbClient {
   return initDb();
 }
 
 export function getPool(): Pool {
   initDb();
-  return pool!;
+  return store.pool!;
 }
