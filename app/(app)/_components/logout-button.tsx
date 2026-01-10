@@ -21,7 +21,7 @@ export function LogoutButton() {
   };
 
   return (
-    <Button variant="outline" onClick={handleLogout} disabled={isLoading}>
+    <Button variant="ghost" onClick={handleLogout} disabled={isLoading} className="hover:bg-indigo-700/15">
       {isLoading ? "Logging out..." : "Logout"}
     </Button>
   );
