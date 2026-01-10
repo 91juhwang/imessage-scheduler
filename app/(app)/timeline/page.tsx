@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getUserFromRequest } from "@/app/lib/auth/session";
 import { listMessagesForUser } from "@/app/lib/db/models/message.model";
-import { TimelineView } from "./timeline-view";
+import { TimelineView } from "./TimelineView";
 import { addDays, parseDateKey, startOfDay } from "./timeline-helpers";
 
 type TimelinePageProps = {

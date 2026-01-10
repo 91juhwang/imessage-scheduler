@@ -1,7 +1,7 @@
 "use client";
 
 import { normalizeUsPhone } from "@imessage-scheduler/shared";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/Badge";
 
 import type { TimelineMessageItem } from "../timeline-types";
 

@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import useSWR, { useSWRConfig } from "swr";
 
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/Button";
+import { Calendar } from "@/components/ui/Calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 
 import {
   SLOT_LABELS,
@@ -19,8 +19,8 @@ import {
   formatIsoWithOffset,
   startOfDay,
 } from "./timeline-helpers";
-import { TimelineMessageDialog } from "./_components/timeline-message-dialog";
-import { TimelineSlotRow } from "./_components/timeline-slot-row";
+import { TimelineMessageDialog } from "./_components/TimelineMessageDialog";
+import { TimelineSlotRow } from "./_components/TimelineSlotRow";
 import type { TimelineMessageItem } from "./timeline-types";
 
 const LOCAL_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;

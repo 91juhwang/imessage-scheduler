@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/Badge";
 import { getUserFromRequest } from "@/app/lib/auth/session";
 
-import { LogoutButton } from "./_components/logout-button";
-import { NavLinks } from "./_components/nav-links";
+import { LogoutButton } from "./_components/LogoutButton";
+import { NavLinks } from "./_components/NavLinks";
 
 export default async function AppLayout({
   children,
