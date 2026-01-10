@@ -328,7 +328,7 @@ Manual verify:
 ### phase 10 — Timeline UI v1: week grid render-only
 Scope:
 - Timeline grid foundation.
-Status: [ ] in progress
+Status: [X] completed
 
 Tasks:
 - Create `/timeline` page:

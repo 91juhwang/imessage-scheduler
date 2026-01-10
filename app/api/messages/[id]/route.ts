@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { UpdateMessageInputSchema } from "@imessage-scheduler/shared";
+import { UpdateMessageInputSchema, normalizeUsPhone } from "@imessage-scheduler/shared";
 import { getUserFromRequest } from "@/app/lib/auth/session";
 import {
   getMessageById,
@@ -46,8 +46,15 @@ export async function PATCH(
     return NextResponse.json({ error: "invalid_datetime" }, { status: 400 });
   }
 
+  const normalizedPhone = parsed.data.to_handle
+    ? normalizeUsPhone(parsed.data.to_handle)
+    : null;
+  if (parsed.data.to_handle && !normalizedPhone) {
+    return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
+  }
+
   await updateMessageById(message.id, {
-    toHandle: parsed.data.to_handle,
+    toHandle: normalizedPhone?.e164,
     body: parsed.data.body,
     scheduledForUtc: scheduledForUtc ?? undefined,
     timezone: parsed.data.timezone,

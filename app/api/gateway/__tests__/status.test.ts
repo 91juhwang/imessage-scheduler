@@ -44,7 +44,7 @@ describe.skipIf(!hasDatabase)("gateway status callback", () => {
     await createMessage({
       id: messageId,
       userId,
-      toHandle: "user@example.com",
+      toHandle: "+15551234567",
       body: "hello",
       scheduledForUtc: new Date(),
       timezone: "UTC",
@@ -102,7 +102,7 @@ describe.skipIf(!hasDatabase)("gateway status callback", () => {
     await createMessage({
       id: messageId,
       userId,
-      toHandle: "user@example.com",
+      toHandle: "+15551234567",
       body: "hello",
       scheduledForUtc: new Date(),
       timezone: "UTC",

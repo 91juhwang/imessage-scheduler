@@ -42,7 +42,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
     await createMessage({
       id: messageId,
       userId,
-      toHandle: "user@example.com",
+      toHandle: "+15551234567",
       body: "hello",
       scheduledForUtc: new Date("2025-01-01T16:00:00.000Z"),
       timezone: "UTC",
@@ -55,7 +55,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
         cookie: authCookie(sessionId),
       },
       body: JSON.stringify({
-        to_handle: "updated@example.com",
+        to_handle: "555-987-6543",
         body: "updated",
         scheduled_for_local: "2025-01-02T10:00:00-06:00",
         timezone: "America/Chicago",
@@ -66,7 +66,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
     expect(response.status).toBe(200);
 
     const updated = await getMessageById(messageId);
-    expect(updated?.toHandle).toBe("updated@example.com");
+    expect(updated?.toHandle).toBe("+15559876543");
     expect(updated?.body).toBe("updated");
     expect(updated?.scheduledForUtc.toISOString()).toBe("2025-01-02T16:00:00.000Z");
   });
@@ -96,7 +96,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
     await createMessage({
       id: messageId,
       userId,
-      toHandle: "user@example.com",
+      toHandle: "+15551234567",
       body: "hello",
       scheduledForUtc: new Date("2025-01-01T16:00:00.000Z"),
       timezone: "UTC",
@@ -111,7 +111,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
         cookie: authCookie(sessionId),
       },
       body: JSON.stringify({
-        to_handle: "updated@example.com",
+        to_handle: "555-987-6543",
       }),
     });
 
@@ -144,7 +144,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
     await createMessage({
       id: messageId,
       userId,
-      toHandle: "user@example.com",
+      toHandle: "+15551234567",
       body: "hello",
       scheduledForUtc: new Date("2025-01-01T16:00:00.000Z"),
       timezone: "UTC",

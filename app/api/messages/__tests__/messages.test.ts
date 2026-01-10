@@ -43,7 +43,7 @@ describe.skipIf(!hasDatabase)("messages api", () => {
         cookie: authCookie(sessionId),
       },
       body: JSON.stringify({
-        to_handle: "user@example.com",
+        to_handle: "555-123-4567",
         body: "hello",
         scheduled_for_local: scheduledLocal,
         timezone: "America/Chicago",
@@ -93,7 +93,7 @@ describe.skipIf(!hasDatabase)("messages api", () => {
     await createMessage({
       id: crypto.randomUUID(),
       userId,
-      toHandle: "user@example.com",
+      toHandle: "+15551234567",
       body: "mine",
       scheduledForUtc: new Date(),
       timezone: "UTC",
@@ -102,7 +102,7 @@ describe.skipIf(!hasDatabase)("messages api", () => {
     await createMessage({
       id: crypto.randomUUID(),
       userId: otherUserId,
-      toHandle: "other@example.com",
+      toHandle: "+15552223333",
       body: "other",
       scheduledForUtc: new Date(),
       timezone: "UTC",
@@ -119,6 +119,6 @@ describe.skipIf(!hasDatabase)("messages api", () => {
 
     const payload = await response.json();
     expect(payload.messages).toHaveLength(1);
-    expect(payload.messages[0].to_handle).toBe("user@example.com");
+    expect(payload.messages[0].to_handle).toBe("+15551234567");
   });
 });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { isValidUsPhone } from "./phone";
 import { MessageStatus } from "./status";
 
 const isValidTimeZone = (value: string) => {
@@ -24,14 +25,20 @@ export const LoginInputSchema = z.object({
 });
 
 export const CreateMessageInputSchema = z.object({
-  to_handle: z.string().min(1),
+  to_handle: z.string().min(1).refine(isValidUsPhone, {
+    message: "Invalid phone number",
+  }),
   body: z.string().min(1).max(2000),
   scheduled_for_local: IsoDateTimeWithOffsetSchema,
   timezone: TimeZoneSchema,
 });
 
 export const UpdateMessageInputSchema = z.object({
-  to_handle: z.string().min(1).optional(),
+  to_handle: z
+    .string()
+    .min(1)
+    .refine(isValidUsPhone, { message: "Invalid phone number" })
+    .optional(),
   body: z.string().min(1).max(2000).optional(),
   scheduled_for_local: IsoDateTimeWithOffsetSchema.optional(),
   timezone: TimeZoneSchema.optional(),

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { CreateMessageInputSchema } from "@imessage-scheduler/shared";
+import { CreateMessageInputSchema, normalizeUsPhone } from "@imessage-scheduler/shared";
 import { getUserFromRequest } from "@/app/lib/auth/session";
 import {
   createMessage,
@@ -36,12 +36,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_datetime" }, { status: 400 });
   }
 
+  const normalizedPhone = normalizeUsPhone(parsed.data.to_handle);
+  if (!normalizedPhone) {
+    return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
+  }
+
   const id = crypto.randomUUID();
 
   await createMessage({
     id,
     userId: user.id,
-    toHandle: parsed.data.to_handle,
+    toHandle: normalizedPhone.e164,
     body: parsed.data.body,
     scheduledForUtc,
     timezone: parsed.data.timezone,

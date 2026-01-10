@@ -6,7 +6,7 @@ import {
 } from "../schemas";
 
 const validPayload = {
-  to_handle: "user@example.com",
+  to_handle: "555-123-4567",
   body: "Hello",
   scheduled_for_local: new Date().toISOString(),
   timezone: "America/Chicago",
@@ -38,6 +38,14 @@ describe("schemas", () => {
 
     expect(noTo.success).toBe(false);
     expect(noBody.success).toBe(false);
+  });
+
+  it("rejects invalid phone numbers", () => {
+    const result = CreateMessageInputSchema.safeParse({
+      ...validPayload,
+      to_handle: "123",
+    });
+    expect(result.success).toBe(false);
   });
 
   it("validates login input", () => {

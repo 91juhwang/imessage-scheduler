@@ -22,7 +22,7 @@ describe.skipIf(!hasDatabase)("messages table", () => {
     await createMessage({
       id: messageId,
       userId,
-      toHandle: "user@example.com",
+      toHandle: "+15551234567",
       body: "hello",
       scheduledForUtc: new Date(),
       timezone: "UTC",
