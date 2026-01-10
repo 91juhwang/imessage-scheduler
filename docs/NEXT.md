@@ -240,6 +240,7 @@ Manual verify:
 ### phase 07 — Web messages API: update + cancel + transition guards
 Scope:
 - Needed for timeline drag-to-move and cancel.
+Status: [X] completed
 
 Tasks:
 - `PATCH /api/messages/:id`
