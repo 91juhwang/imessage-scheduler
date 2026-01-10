@@ -1,4 +1,5 @@
 import { and, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 
 import { getDb } from "../index";
 import { messages } from "../schema";
@@ -167,7 +168,8 @@ export async function listMessagesForUser(
       receiptCorrelation: messages.receiptCorrelation,
     })
     .from(messages)
-    .where(and(...conditions));
+    .where(and(...conditions))
+    .orderBy(asc(messages.scheduledForUtc), asc(messages.createdAt));
 }
 
 export async function countPendingMessagesForUserInWindow(
