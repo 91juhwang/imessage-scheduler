@@ -11,6 +11,11 @@ describe("postGatewayStatus", () => {
       workerEnabled: true,
       version: "0.1.0",
       webBaseUrl: "http://localhost:3000",
+      databaseUrl: "mysql://root:root@localhost:3306/test",
+      workerPollIntervalMs: 2000,
+      maxAttempts: 5,
+      baseBackoffSeconds: 30,
+      maxBackoffSeconds: 1800,
     };
 
     let capturedHeaders: Record<string, string> | null = null;

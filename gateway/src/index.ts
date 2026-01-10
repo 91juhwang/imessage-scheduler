@@ -2,6 +2,7 @@ import http from "node:http";
 
 import { parseGatewayEnv } from "./env";
 import { handleHealth, handleSend } from "./handlers";
+import { startWorker } from "./worker";
 
 const env = parseGatewayEnv();
 
@@ -63,3 +64,5 @@ const server = http.createServer(async (req, res) => {
 server.listen(env.port, () => {
   console.log(`[gateway] listening on http://localhost:${env.port}`);
 });
+
+startWorker(env);

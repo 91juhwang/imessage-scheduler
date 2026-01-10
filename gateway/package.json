@@ -7,6 +7,8 @@
   },
   "dependencies": {
     "@imessage-scheduler/shared": "workspace:*",
+    "drizzle-orm": "^0.45.1",
+    "mysql2": "^3.16.0",
     "zod": "^4.3.5"
   }
 }
