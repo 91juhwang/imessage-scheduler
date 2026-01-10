@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "../index";
 import { messages } from "../schema";
@@ -110,4 +110,45 @@ export async function updateMessageById(
   }
   const [result] = await db.update(messages).set(patch).where(eq(messages.id, id));
   return result.affectedRows ?? 0;
+}
+
+export type MessageListRow = Pick<
+  MessageRow,
+  "id" | "scheduledForUtc" | "toHandle" | "status" | "body"
+>;
+
+export type MessageListFilters = {
+  from?: Date;
+  to?: Date;
+  status?: MessageStatus;
+};
+
+export async function listMessagesForUser(
+  userId: string,
+  filters: MessageListFilters = {},
+): Promise<MessageListRow[]> {
+  const conditions = [eq(messages.userId, userId)];
+
+  if (filters.from) {
+    conditions.push(gte(messages.scheduledForUtc, filters.from));
+  }
+
+  if (filters.to) {
+    conditions.push(lte(messages.scheduledForUtc, filters.to));
+  }
+
+  if (filters.status) {
+    conditions.push(eq(messages.status, filters.status));
+  }
+
+  return db
+    .select({
+      id: messages.id,
+      scheduledForUtc: messages.scheduledForUtc,
+      toHandle: messages.toHandle,
+      status: messages.status,
+      body: messages.body,
+    })
+    .from(messages)
+    .where(and(...conditions));
 }

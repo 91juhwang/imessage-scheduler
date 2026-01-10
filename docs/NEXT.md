@@ -207,7 +207,7 @@ Manual verify:
 ### phase 06 — Web messages API: create + list (scoped)
 Scope:
 - Backend endpoints for timeline and dashboard.
-Status: [ ] in progress
+Status: [X] completed
 
 Tasks:
 - `POST /api/messages`
