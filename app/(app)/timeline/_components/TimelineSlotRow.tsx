@@ -5,6 +5,7 @@ import { GripVertical } from "lucide-react";
 import { normalizeUsPhone } from "@imessage-scheduler/shared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { getStatusBadgeClass } from "@/app/lib/status-badge";
 import { cn } from "@/lib/utils";
 
 import type { TimelineMessageItem } from "../timeline-types";
@@ -114,7 +115,10 @@ export function TimelineSlotRow({
                       {normalizeUsPhone(message.to_handle)?.formatted ?? message.to_handle}
                     </span>
                     <div className="flex items-end ">
-                      <Badge variant="secondary" className="text-[9px] bg-yellow-100">
+                      <Badge
+                        variant="secondary"
+                        className={cn("text-[9px]", getStatusBadgeClass(message.status))}
+                      >
                         {message.status}
                       </Badge>
                       <Button
