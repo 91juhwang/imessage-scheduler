@@ -68,6 +68,7 @@ Seeded users:
 - **Timeline**: single-day view, 30‑minute slots, drag-to-create/move, edit/cancel, duplicate.
 - **Gateway**: AppleScript send, FIFO worker, per-user rate limiting.
 - **Receipts**: best-effort correlation with chat.db and polling for DELIVERED/RECEIVED.
+- **UX**: Default scrolling to current time on today's date. Duplicate button for easy creation of mutiple schedules.
 
 Default rate limits:
 - FREE: 0s min interval, 2 per hour
