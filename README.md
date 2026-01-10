@@ -4,21 +4,13 @@
 
 ```bash
 # installs both packages in ./ & ./gateway
+# Use Node: 22.13.1 --> See .nvmrc
 pnpm run setup
 ```
 
-#### 1) Start MySQL (required)
+#### 1) Start MySQL
 
-**Option A:** Docker
-
-```bash
-docker run --name imessage-mysql \
-  -e MYSQL_ROOT_PASSWORD=pass \
-  -e MYSQL_DATABASE=imessage_scheduler \
-  -p 3306:3306 -d mysql:8
-```
-
-**Option B:** Homebrew MySQL
+via Homebrew
 
 ```bash
 brew install mysql
@@ -28,11 +20,7 @@ mysql -uroot -e "CREATE DATABASE imessage_scheduler;"
 
 #### 2) Configure env
 
-```bash
-cp .env.example .env
-```
-
-Example `.env`:
+Add `.env`
 
 ```bash
 DATABASE_URL=mysql://root@localhost:3306/imessage_scheduler
@@ -42,14 +30,9 @@ WEB_PORT=3000
 WEB_BASE_URL=http://localhost:3000
 ```
 
-IF your local MySQL user has a password, include it in the URL: (default should be no password, most likely above .env should work.)
+If your local MySQL user has a password, include it in the URL: (default should be no password, use above .env)
 ```bash
 DATABASE_URL=mysql://root:<password>@localhost:3306/imessage_scheduler
-```
-
-Docker users should use the default Docker password:
-```bash
-DATABASE_URL=mysql://root:pass@localhost:3306/imessage_scheduler
 ```
 
 #### 3) Migrate + seed
@@ -63,7 +46,7 @@ pnpm db:seed
 #### 4) Run the app
 
 ```bash
-# runs pnpm dev:web && pnpm dev:gateway
+# starts gateaway & web
 pnpm run dev
 ```
 
@@ -80,12 +63,13 @@ Seeded users:
 - user1@example.com (free) / password123
 - user2@example.com (paid) / password123
 
-### Usage
+### Features
 
-- Create a schedule by clicking on the timeline
-- **Drag & Drop** to modify the schedule
-- Click to edit or cancel
-- Go to Dashboard to see the history & status
+- CRUD schedules
+- **Drag & Drop** to modify the scheduled message
+- Duplicate a scheduled message
+- Go to Dashboard to see the history & status with filters
+- Free & Paid user rate limiting (free = 2, paid = 30, reset limit button for test purposes)
 
 ## Tech Stack
 
@@ -101,4 +85,8 @@ Seeded users:
 ## Project Structure
 
 - `./db`
-- `./app/api/` API endpoints (auth, messages,  )
+- `./app/api/` API endpoints 
+- `./gateway/` Gateway: inclues the worker, handles polling and callback to web
+- `./packages/shared` Shared types, utils
+
+
