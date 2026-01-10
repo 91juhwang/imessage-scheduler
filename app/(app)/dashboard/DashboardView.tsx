@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 
 import { normalizeUsPhone } from "@imessage-scheduler/shared";
 
 import { addDays, endOfDay, formatDateKey, parseDateKey, startOfDay, startOfWeek } from "@/app/lib/date-utils";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import {
@@ -48,6 +49,13 @@ type DashboardResponse = {
   messages: DashboardMessage[];
 };
 
+type RateLimitResponse = {
+  remaining_in_window: number;
+  max_per_hour: number;
+  next_allowed_at: string | null;
+  paid_user: boolean;
+};
+
 const STATUS_OPTIONS = [
   { value: "ALL", label: "All statuses" },
   { value: "QUEUED", label: "Queued" },
@@ -85,6 +93,7 @@ function truncate(value: string | null, length = 40) {
 }
 
 export function DashboardView() {
+  const { mutate } = useSWRConfig();
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [rangeFilter, setRangeFilter] = useState<RangeOption>("THIS_WEEK");
   const [customFrom, setCustomFrom] = useState(() => formatDateKey(new Date()));
@@ -126,15 +135,19 @@ export function DashboardView() {
     return `/api/messages${query ? `?${query}` : ""}`;
   }, [range, statusFilter]);
 
-  const fetcher = async (url: string) => {
+  const fetcher = async <T,>(url: string) => {
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error("Failed to load messages.");
     }
-    return (await response.json()) as DashboardResponse;
+    return (await response.json()) as T;
   };
 
-  const { data, error, isLoading } = useSWR(messagesKey, fetcher);
+  const { data, error, isLoading } = useSWR<DashboardResponse>(messagesKey, fetcher);
+  const { data: rateLimitData } = useSWR<RateLimitResponse>(
+    "/api/rate-limit",
+    fetcher,
+  );
 
   const formattedMessages = useMemo(
     () =>
@@ -153,6 +166,22 @@ export function DashboardView() {
           <p className="text-sm text-indigo-500">Queue history and delivery details.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {rateLimitData ? (
+            <>
+              <Badge variant="outline" className="bg-indigo-700/15">
+                Remaining: {rateLimitData.remaining_in_window}/{rateLimitData.max_per_hour}
+              </Badge>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await fetch("/api/rate-limit", { method: "POST" });
+                  await mutate("/api/rate-limit");
+                }}
+              >
+                Reset Rate Limit
+              </Button>
+            </>
+          ) : null}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="min-w-[160px]">
               <SelectValue placeholder="Status" />
