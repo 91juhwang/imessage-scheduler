@@ -82,16 +82,6 @@ function formatDateTime(dateString: string | null) {
   }).format(date);
 }
 
-function truncate(value: string | null, length = 40) {
-  if (!value) {
-    return "—";
-  }
-  if (value.length <= length) {
-    return value;
-  }
-  return `${value.slice(0, length)}…`;
-}
-
 function getStatusBadgeClass(status: string) {
   switch (status) {
     case "QUEUED":
@@ -194,17 +184,19 @@ export function DashboardView() {
               </Badge>
               <Button
                 variant="outline"
+                className="ring-0"
+                size="sm"
                 onClick={async () => {
                   await fetch("/api/rate-limit", { method: "POST" });
                   await mutate("/api/rate-limit");
                 }}
               >
-                Reset Rate Limit
+                Reset Limit
               </Button>
             </>
           ) : null}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="min-w-[160px]">
+            <SelectTrigger className="min-w-[160px] hover:cursor-pointer">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -216,7 +208,7 @@ export function DashboardView() {
             </SelectContent>
           </Select>
           <Select value={rangeFilter} onValueChange={(value) => setRangeFilter(value as RangeOption)}>
-            <SelectTrigger className="min-w-[140px]">
+            <SelectTrigger className="min-w-[140px]  hover:cursor-pointer">
               <SelectValue placeholder="Range" />
             </SelectTrigger>
             <SelectContent>
@@ -236,6 +228,7 @@ export function DashboardView() {
                 type="date"
                 value={customFrom}
                 onChange={(event) => setCustomFrom(event.target.value)}
+                className=" hover:cursor-pointer"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -244,6 +237,7 @@ export function DashboardView() {
                 type="date"
                 value={customTo}
                 onChange={(event) => setCustomTo(event.target.value)}
+                className=" hover:cursor-pointer"
               />
             </div>
           </div>
