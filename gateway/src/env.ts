@@ -18,6 +18,8 @@ const EnvSchema = z.object({
   MAX_ATTEMPTS: z.string().optional(),
   BASE_BACKOFF_SECONDS: z.string().optional(),
   MAX_BACKOFF_SECONDS: z.string().optional(),
+  RECEIPT_POLL_INTERVAL_MS: z.string().optional(),
+  RECEIPT_POLL_TIMEOUT_MS: z.string().optional(),
   FREE_MIN_INTERVAL_SECONDS: z.string().optional(),
   PAID_MIN_INTERVAL_SECONDS: z.string().optional(),
   FREE_MAX_PER_HOUR: z.string().optional(),
@@ -35,6 +37,8 @@ type GatewayEnv = {
   maxAttempts: number;
   baseBackoffSeconds: number;
   maxBackoffSeconds: number;
+  receiptPollIntervalMs: number;
+  receiptPollTimeoutMs: number;
   freeMinIntervalSeconds: number;
   paidMinIntervalSeconds: number;
   freeMaxPerHour: number;
@@ -64,6 +68,8 @@ function parseGatewayEnv(): GatewayEnv {
   const maxAttempts = Number(parsed.data.MAX_ATTEMPTS ?? 5);
   const baseBackoffSeconds = Number(parsed.data.BASE_BACKOFF_SECONDS ?? 30);
   const maxBackoffSeconds = Number(parsed.data.MAX_BACKOFF_SECONDS ?? 1800);
+  const receiptPollIntervalMs = Number(parsed.data.RECEIPT_POLL_INTERVAL_MS ?? 10000);
+  const receiptPollTimeoutMs = Number(parsed.data.RECEIPT_POLL_TIMEOUT_MS ?? 1800000);
   const freeMinIntervalSeconds = Number(parsed.data.FREE_MIN_INTERVAL_SECONDS ?? 0);
   const paidMinIntervalSeconds = Number(parsed.data.PAID_MIN_INTERVAL_SECONDS ?? 0);
   const freeMaxPerHour = Number(parsed.data.FREE_MAX_PER_HOUR ?? 2);
@@ -80,6 +86,12 @@ function parseGatewayEnv(): GatewayEnv {
   }
   if (Number.isNaN(maxBackoffSeconds)) {
     throw new Error("MAX_BACKOFF_SECONDS must be a number.");
+  }
+  if (Number.isNaN(receiptPollIntervalMs)) {
+    throw new Error("RECEIPT_POLL_INTERVAL_MS must be a number.");
+  }
+  if (Number.isNaN(receiptPollTimeoutMs)) {
+    throw new Error("RECEIPT_POLL_TIMEOUT_MS must be a number.");
   }
   if (Number.isNaN(freeMinIntervalSeconds)) {
     throw new Error("FREE_MIN_INTERVAL_SECONDS must be a number.");
@@ -105,6 +117,8 @@ function parseGatewayEnv(): GatewayEnv {
     maxAttempts,
     baseBackoffSeconds,
     maxBackoffSeconds,
+    receiptPollIntervalMs,
+    receiptPollTimeoutMs,
     freeMinIntervalSeconds,
     paidMinIntervalSeconds,
     freeMaxPerHour,

@@ -6,7 +6,7 @@ import type { GatewayEnv } from "./env";
 import { sendIMessage } from "./applescript";
 import { postGatewayStatus } from "./callback";
 import { getDb } from "./db";
-import { attemptReceiptCorrelation } from "./receipt";
+import { attemptReceiptCorrelation, pollForReceiptUpdates } from "./receipt";
 import { messages, userRateLimit, users } from "./schema";
 
 type MessageRow = {
@@ -271,7 +271,11 @@ async function updateRateLimitAfterSend(
 
 async function notifyStatus(
   env: GatewayEnv,
-  payload: { messageId: string; status: "SENT" | "FAILED"; meta?: Record<string, unknown> },
+  payload: {
+    messageId: string;
+    status: "SENT" | "FAILED" | "DELIVERED" | "RECEIVED";
+    meta?: Record<string, unknown>;
+  },
 ) {
   const callbackPayload = GatewayStatusCallbackSchema.parse({
     messageId: payload.messageId,
@@ -365,6 +369,25 @@ async function runOnce(env: GatewayEnv) {
           sendMethod: "applescript",
           ...correlation,
         },
+      });
+      void pollForReceiptUpdates(
+        {
+          messageId: candidate.id,
+          correlation,
+          intervalMs: env.receiptPollIntervalMs,
+          timeoutMs: env.receiptPollTimeoutMs,
+          onStatus: async (status, payload) => {
+            await notifyStatus(env, {
+              messageId: candidate.id,
+              status,
+              meta: payload,
+            });
+          },
+        },
+        {},
+      ).catch((error) => {
+        const message = error instanceof Error ? error.message : "unknown_error";
+        console.log("[gateway-receipt] polling failed", { error: message });
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";

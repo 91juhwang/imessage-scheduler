@@ -21,6 +21,7 @@ type ReceiptCorrelation = {
 type ChatDbClient = {
   prepare: (sql: string) => {
     get: (...args: Array<string | number>) => Record<string, unknown> | undefined;
+    all: () => Array<Record<string, unknown>>;
   };
   close: () => void;
 };
@@ -30,8 +31,23 @@ type ReceiptDeps = {
   fileExists?: (dbPath: string) => boolean;
 };
 
+type ReceiptPollDeps = ReceiptDeps & {
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+};
+
+type ReceiptSnapshot = {
+  delivered: boolean;
+  received: boolean;
+  deliveredAt?: string | null;
+  receivedAt?: string | null;
+  notes?: string;
+};
+
 const APPLE_EPOCH_SECONDS = 978307200;
 const WINDOW_MS = 5 * 60 * 1000;
+const RECEIPT_POLL_INTERVAL_MS = 10_000;
+const RECEIPT_POLL_TIMEOUT_MS = 30 * 60 * 1000;
 
 function getChatDbPath() {
   return path.join(os.homedir(), "Library", "Messages", "chat.db");
@@ -49,6 +65,115 @@ function buildTimeWindow(sentAt: Date) {
   const startNanos = startSeconds * 1_000_000_000;
   const endNanos = endSeconds * 1_000_000_000;
   return { startSeconds, endSeconds, startNanos, endNanos };
+}
+
+function appleEpochToDate(value: number | null | undefined) {
+  if (!value || Number.isNaN(value) || value <= 0) {
+    return null;
+  }
+  const seconds = value > 1_000_000_000_000 ? value / 1_000_000_000 : value;
+  const unixSeconds = seconds + APPLE_EPOCH_SECONDS;
+  return new Date(unixSeconds * 1000);
+}
+
+function getMessageColumns(db: ChatDbClient) {
+  const rows = db.prepare("PRAGMA table_info(message)").all();
+  const columns = new Set<string>();
+  for (const row of rows) {
+    if (typeof row.name === "string") {
+      columns.add(row.name);
+    }
+  }
+  return columns;
+}
+
+function buildReceiptQuery(columns: Set<string>) {
+  const fields = ["ROWID as messageRowId", "guid as chatGuid"];
+  if (columns.has("is_delivered")) {
+    fields.push("is_delivered");
+  }
+  if (columns.has("is_read")) {
+    fields.push("is_read");
+  }
+  if (columns.has("date_delivered")) {
+    fields.push("date_delivered");
+  }
+  if (columns.has("date_read")) {
+    fields.push("date_read");
+  }
+
+  return `SELECT ${fields.join(", ")} FROM message`;
+}
+
+function readReceiptSnapshot(
+  correlation: ReceiptCorrelation,
+  deps: ReceiptDeps = {},
+): ReceiptSnapshot {
+  const fileExists = deps.fileExists ?? fs.existsSync;
+  if (!fileExists(correlation.chatDbPath)) {
+    return { delivered: false, received: false, notes: "chat_db_not_found" };
+  }
+
+  const openDb =
+    deps.openDb ??
+    ((dbPath: string) =>
+      new Database(dbPath, { readonly: true }) as unknown as ChatDbClient);
+
+  let db: ChatDbClient | null = null;
+
+  try {
+    db = openDb(correlation.chatDbPath);
+    const columns = getMessageColumns(db);
+    const baseQuery = buildReceiptQuery(columns);
+    const whereClause =
+      typeof correlation.messageRowId === "number"
+        ? " WHERE ROWID = ?"
+        : correlation.chatGuid
+          ? " WHERE guid = ?"
+          : "";
+    if (!whereClause) {
+      return { delivered: false, received: false, notes: "missing_correlation" };
+    }
+
+    const row = db
+      .prepare(`${baseQuery}${whereClause} LIMIT 1`)
+      .get(
+        typeof correlation.messageRowId === "number"
+          ? correlation.messageRowId
+          : correlation.chatGuid ?? "",
+      ) as
+      | {
+          is_delivered?: number | null;
+          is_read?: number | null;
+          date_delivered?: number | null;
+          date_read?: number | null;
+        }
+      | undefined;
+
+    if (!row) {
+      return { delivered: false, received: false, notes: "no_match" };
+    }
+
+    const deliveredAt = appleEpochToDate(row.date_delivered ?? null);
+    const receivedAt = appleEpochToDate(row.date_read ?? null);
+    const delivered =
+      (typeof row.is_delivered === "number" && row.is_delivered === 1) ||
+      Boolean(deliveredAt);
+    const received =
+      (typeof row.is_read === "number" && row.is_read === 1) || Boolean(receivedAt);
+
+    return {
+      delivered,
+      received,
+      deliveredAt: deliveredAt?.toISOString() ?? null,
+      receivedAt: receivedAt?.toISOString() ?? null,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown_error";
+    return { delivered: false, received: false, notes: `query_failed:${message}` };
+  } finally {
+    db?.close();
+  }
 }
 
 async function attemptReceiptCorrelation(
@@ -119,7 +244,6 @@ async function attemptReceiptCorrelation(
         window.endNanos,
       ) as { messageRowId?: number; chatGuid?: string | null } | undefined;
 
-    console.log('james: ', base)
     if (!row) {
       console.log("[gateway-receipt] no match found", {
         handle: base.handle,
@@ -149,5 +273,81 @@ async function attemptReceiptCorrelation(
   }
 }
 
-export { attemptReceiptCorrelation, getChatDbPath };
+async function pollForReceiptUpdates(
+  input: {
+    messageId: string;
+    correlation: ReceiptCorrelation;
+    onStatus: (status: "DELIVERED" | "RECEIVED", payload: Record<string, unknown>) => Promise<void>;
+    intervalMs?: number;
+    timeoutMs?: number;
+  },
+  deps: ReceiptPollDeps = {},
+) {
+  const intervalMs = input.intervalMs ?? RECEIPT_POLL_INTERVAL_MS;
+  const timeoutMs = input.timeoutMs ?? RECEIPT_POLL_TIMEOUT_MS;
+  const now = deps.now ?? (() => Date.now());
+  const sleep =
+    deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+
+  const correlation = input.correlation;
+  if (!correlation.messageRowId && !correlation.chatGuid) {
+    console.log("[gateway-receipt] skipping poll (no correlation row)", {
+      messageId: input.messageId,
+    });
+    return;
+  }
+
+  const deadline = now() + timeoutMs;
+  let deliveredNotified = false;
+
+  while (now() < deadline) {
+    const snapshot = readReceiptSnapshot(correlation, deps);
+    if (snapshot.notes?.startsWith("query_failed")) {
+      console.log("[gateway-receipt] polling stopped", {
+        messageId: input.messageId,
+        notes: snapshot.notes,
+      });
+      return;
+    }
+
+    if (snapshot.delivered && !deliveredNotified) {
+      deliveredNotified = true;
+      await input.onStatus("DELIVERED", {
+        method: correlation.method,
+        messageRowId: correlation.messageRowId,
+        chatGuid: correlation.chatGuid,
+        deliveredAt: snapshot.deliveredAt,
+      });
+    }
+
+    if (snapshot.received) {
+      if (!deliveredNotified) {
+        await input.onStatus("DELIVERED", {
+          method: correlation.method,
+          messageRowId: correlation.messageRowId,
+          chatGuid: correlation.chatGuid,
+          deliveredAt: snapshot.deliveredAt,
+        });
+      }
+      await input.onStatus("RECEIVED", {
+        method: correlation.method,
+        messageRowId: correlation.messageRowId,
+        chatGuid: correlation.chatGuid,
+        deliveredAt: snapshot.deliveredAt,
+        receivedAt: snapshot.receivedAt,
+      });
+      return;
+    }
+
+    await sleep(intervalMs);
+  }
+
+  console.log("[gateway-receipt] polling timeout", {
+    messageId: input.messageId,
+    messageRowId: correlation.messageRowId,
+    chatGuid: correlation.chatGuid,
+  });
+}
+
+export { attemptReceiptCorrelation, getChatDbPath, pollForReceiptUpdates };
 export type { ReceiptCorrelation };
