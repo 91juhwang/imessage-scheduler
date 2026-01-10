@@ -6,6 +6,8 @@ import {
   getMessageById,
   updateMessageById,
 } from "@/app/lib/db/models/message.model";
+import { getOrCreateRateLimitRow } from "@/app/lib/db/models/rate_limit.model";
+import { getRateLimitDecision } from "@/app/lib/rate-limit";
 import { isImmutableStatus } from "./status";
 
 function parseScheduledDate(value: string | undefined) {
@@ -52,6 +54,19 @@ export async function PATCH(
     : null;
   if (parsed.data.to_handle && !normalizedPhone) {
     return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
+  }
+
+  const rateLimitRow = await getOrCreateRateLimitRow(user.id);
+  const decision = getRateLimitDecision(new Date(), rateLimitRow, user.paidUser);
+  if (!decision.allowed) {
+    return NextResponse.json(
+      {
+        error: "rate_limit_reached",
+        reason: decision.reason,
+        next_allowed_at: decision.nextAllowedAt?.toISOString() ?? null,
+      },
+      { status: 429 },
+    );
   }
 
   await updateMessageById(message.id, {

@@ -153,11 +153,12 @@ Statuses are persisted and must be explicit.
 - SENT: AppleScript send succeeded (Messages accepted)
 - DELIVERED: receipt tracker observed delivery (best-effort attempt required)
 - RECEIVED: receipt tracker observed read/received (best-effort attempt required)
-- FAILED: send failed and retries exhausted OR hard failure
+- FAILED: send failed and retries exhausted OR hard failure (including rate limit)
 - CANCELED: user canceled prior to sending
 
 Allowed transitions:
 - QUEUED -> SENDING
+- QUEUED -> FAILED (rate limit failure)
 - SENDING -> SENT | FAILED
 - SENT -> DELIVERED (when detected)
 - DELIVERED -> RECEIVED (when detected)
@@ -233,6 +234,10 @@ If sent_in_window >= max => cannot send.
 When message becomes SENT:
 - last_sent_at = now
 - sent_in_window++ (reset window if needed)
+
+If a message is disallowed by rate limit:
+- mark status FAILED
+- set last_error = rate_limit_reached
 
 ---
 

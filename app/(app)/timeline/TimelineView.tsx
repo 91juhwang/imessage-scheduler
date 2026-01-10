@@ -155,6 +155,10 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
       );
 
       if (!response.ok) {
+        if (response.status === 429) {
+          toast.error("Rate limit reached. Try again later.");
+          return;
+        }
         throw new Error("Failed to schedule message.");
       }
 
@@ -206,6 +210,10 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          toast.error("Rate limit reached. Try again later.");
+          return;
+        }
         throw new Error("Failed to move message.");
       }
 
@@ -276,7 +284,7 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
   };
 
   return (
-    <Card>
+    <Card className="">
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <CardTitle>Timeline</CardTitle>
@@ -300,7 +308,7 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 max-h-screen overflow-auto">
         {error ? <p className="text-sm text-red-600">Unable to load messages.</p> : null}
         {isLoading ? (
           <p className="text-sm text-zinc-500">Loading timeline…</p>

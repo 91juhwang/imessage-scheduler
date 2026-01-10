@@ -7,6 +7,8 @@ import {
   listMessagesForUser,
   type MessageStatus,
 } from "@/app/lib/db/models/message.model";
+import { getOrCreateRateLimitRow } from "@/app/lib/db/models/rate_limit.model";
+import { getRateLimitDecision } from "@/app/lib/rate-limit";
 import { MESSAGE_STATUSES } from "./status";
 
 function parseDateParam(value: string | null) {
@@ -39,6 +41,19 @@ export async function POST(request: Request) {
   const normalizedPhone = normalizeUsPhone(parsed.data.to_handle);
   if (!normalizedPhone) {
     return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
+  }
+
+  const rateLimitRow = await getOrCreateRateLimitRow(user.id);
+  const decision = getRateLimitDecision(new Date(), rateLimitRow, user.paidUser);
+  if (!decision.allowed) {
+    return NextResponse.json(
+      {
+        error: "rate_limit_reached",
+        reason: decision.reason,
+        next_allowed_at: decision.nextAllowedAt?.toISOString() ?? null,
+      },
+      { status: 429 },
+    );
   }
 
   const id = crypto.randomUUID();

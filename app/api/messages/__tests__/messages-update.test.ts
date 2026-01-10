@@ -7,6 +7,7 @@ import {
   getMessageById,
   updateMessageById,
 } from "@/app/lib/db/models/message.model";
+import { createRateLimitRow } from "@/app/lib/db/models/rate_limit.model";
 import { SESSION_COOKIE_NAME } from "@/app/lib/auth/cookies";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
@@ -165,5 +166,61 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
 
     const canceled = await getMessageById(messageId);
     expect(canceled?.status).toBe("CANCELED");
+  });
+
+  it("blocks message updates when rate limit is reached", async () => {
+    const { PATCH } = await import("@/app/api/messages/[id]/route");
+
+    const userId = crypto.randomUUID();
+    const sessionId = crypto.randomUUID();
+    const messageId = crypto.randomUUID();
+
+    await createUser({
+      id: userId,
+      email: `test-${userId}@example.com`,
+      passwordHash: "hash",
+      paidUser: false,
+      createdAt: new Date(),
+    });
+
+    await createSessionRow({
+      id: sessionId,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+    });
+
+    await createRateLimitRow({
+      userId,
+      lastSentAt: new Date(),
+      windowStartedAt: new Date(),
+      sentInWindow: 2,
+    });
+
+    await createMessage({
+      id: messageId,
+      userId,
+      toHandle: "+15551234567",
+      body: "hello",
+      scheduledForUtc: new Date("2025-01-01T16:00:00.000Z"),
+      timezone: "UTC",
+    });
+
+    const request = new Request(`http://localhost/api/messages/${messageId}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        cookie: authCookie(sessionId),
+      },
+      body: JSON.stringify({
+        body: "updated",
+      }),
+    });
+
+    const response = await PATCH(request, { params: Promise.resolve({ id: messageId }) });
+    expect(response.status).toBe(429);
+
+    const stored = await getMessageById(messageId);
+    expect(stored?.body).toBe("hello");
   });
 });

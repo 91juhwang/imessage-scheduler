@@ -1,4 +1,8 @@
-import { evaluateRateLimit, type RateLimitConfig } from "@imessage-scheduler/shared";
+import {
+  evaluateRateLimit,
+  type RateLimitConfig,
+  type RateLimitDecision,
+} from "@imessage-scheduler/shared";
 
 import type { RateLimitRow } from "./db/models/rate_limit.model";
 
@@ -36,4 +40,13 @@ function buildRateLimitSummary(
 }
 
 export type { RateLimitSummary };
-export { buildRateLimitSummary, getRateLimitConfig };
+function getRateLimitDecision(
+  now: Date,
+  row: RateLimitRow,
+  paidUser: boolean,
+): RateLimitDecision {
+  const config = getRateLimitConfig();
+  return evaluateRateLimit(now, row, paidUser, config);
+}
+
+export { buildRateLimitSummary, getRateLimitConfig, getRateLimitDecision };

@@ -37,6 +37,21 @@ export async function createRateLimitRow(input: CreateRateLimitInput) {
   return input;
 }
 
+export async function getOrCreateRateLimitRow(userId: string) {
+  const existing = await getRateLimitByUserId(userId);
+  if (existing) {
+    return existing;
+  }
+  const created: RateLimitRow = {
+    userId,
+    lastSentAt: null,
+    windowStartedAt: null,
+    sentInWindow: 0,
+  };
+  await createRateLimitRow(created);
+  return created;
+}
+
 export async function updateRateLimitByUserId(
   userId: string,
   patch: UpdateRateLimitPatch,

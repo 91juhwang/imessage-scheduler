@@ -145,6 +145,29 @@ async function updateMessageFailure(
     .where(eq(messages.id, messageId));
 }
 
+async function failRateLimitedMessage(
+  env: GatewayEnv,
+  messageId: string,
+  attemptCount: number,
+) {
+  if (!env.databaseUrl) {
+    throw new Error("DATABASE_URL is required for worker.");
+  }
+
+  const db = getDb(env.databaseUrl);
+  const [result] = await db
+    .update(messages)
+    .set({
+      status: "FAILED",
+      attemptCount,
+      lastError: "rate_limit_reached",
+      updatedAt: new Date(),
+    })
+    .where(and(eq(messages.id, messageId), eq(messages.status, "QUEUED")));
+
+  return isLockAcquired(result.affectedRows);
+}
+
 async function getRateLimitState(env: GatewayEnv, userId: string) {
   if (!env.databaseUrl) {
     throw new Error("DATABASE_URL is required for worker.");
@@ -254,6 +277,18 @@ async function runOnce(env: GatewayEnv) {
     const { paidUser, rateLimit } = await getRateLimitState(env, candidate.userId);
     const decision = evaluateRateLimit(now, rateLimit, paidUser, config);
     if (!decision.allowed) {
+      const failed = await failRateLimitedMessage(
+        env,
+        candidate.id,
+        candidate.attemptCount,
+      );
+      if (failed) {
+        await notifyStatus(env, {
+          messageId: candidate.id,
+          status: "FAILED",
+          meta: { reason: "rate_limit_reached" },
+        });
+      }
       continue;
     }
 
