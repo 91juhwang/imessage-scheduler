@@ -38,6 +38,8 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
   const [editingMessage, setEditingMessage] = useState<TimelineMessageItem | null>(null);
   const autoScrollFrame = useRef<number | null>(null);
   const autoScrollY = useRef(0);
+  const [draggingMessageId, setDraggingMessageId] = useState<string | null>(null);
+  const [dragOverSlotIndex, setDragOverSlotIndex] = useState<number | null>(null);
 
   const messagesKey = useMemo(() => {
     const start = startOfDay(selectedDate);
@@ -237,8 +239,9 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
     }
   };
 
-  const handleSlotDragOver = (clientY: number) => {
+  const handleSlotDragOver = (slotIndex: number, clientY: number) => {
     autoScrollY.current = clientY;
+    setDragOverSlotIndex(slotIndex);
     if (autoScrollFrame.current !== null) {
       return;
     }
@@ -256,6 +259,20 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
 
       autoScrollFrame.current = null;
     });
+  };
+
+  const handleMessageDragStart = (
+    messageId: string,
+    event: React.DragEvent<HTMLSpanElement>,
+  ) => {
+    event.dataTransfer.setData("text/plain", messageId);
+    event.dataTransfer.effectAllowed = "move";
+    setDraggingMessageId(messageId);
+  };
+
+  const handleMessageDragEnd = () => {
+    setDraggingMessageId(null);
+    setDragOverSlotIndex(null);
   };
 
   return (
@@ -302,6 +319,10 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
                 onEditMessage={handleEditMessage}
                 onMoveMessage={handleMoveMessage}
                 onSlotDragOver={handleSlotDragOver}
+                onMessageDragStart={handleMessageDragStart}
+                onMessageDragEnd={handleMessageDragEnd}
+                draggingMessageId={draggingMessageId}
+                dragOverSlotIndex={dragOverSlotIndex}
               />
             );
           })}
