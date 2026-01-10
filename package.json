@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "setup": "sh scripts/setup.sh",
     "dev:web": "next dev",
     "dev:gateway": "pnpm -C gateway dev",
     "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:gateway\"",
