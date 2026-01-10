@@ -70,7 +70,7 @@ Seeded users:
 - **Receipts**: best-effort correlation with chat.db and polling for DELIVERED/RECEIVED.
 - **UX**: Default scrolling to current time on today's date. Duplicate button for easy creation of mutiple schedules.
 
-Default rate limits:
+Rate limits:
 - FREE: 0s min interval, 2 per hour
 - PAID: 0s min interval, 30 per hour
 
@@ -81,7 +81,9 @@ Default rate limits:
 1) Web app schedules a message (status = QUEUED).
 2) Gateway worker picks next eligible message FIFO, locks it, sends via AppleScript.
 3) Web app receives SENT callback and stores receipt correlation metadata.
-4) Gateway polls chat.db for delivery/read indicators and posts DELIVERED/RECEIVED when detected.
+4) Gateway polls chat.db for delivery/read indicators (receipt) and posts DELIVERED/RECEIVED when detected.
+
+schedule → queued → worker → status callbacks → receipts
 
 ---
 
@@ -98,6 +100,10 @@ Default rate limits:
 - `app/` Next.js app + API routes
 - `gateway/` Node gateway + worker + receipt polling
 - `packages/shared/` shared types, schemas, helpers
-- `docs/ARCHITECTURE.md` Source of Truth
-- `docs/NEXT.md` implementation plan history
+- `docs/` Source of Truth & implementation plans
+- `app/lib/db` db logic including .models for shared db queries
 
+## Limitations
+- Works only in MacOS local
+- Needs full disk access for chat.db search
+- Smplicity approach for polling (just an interval loop, doesn't scale)
