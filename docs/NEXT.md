@@ -649,42 +649,7 @@ Tests:
 Manual verify:
 - Send to a second device account and confirm transitions update.
 
----
-
-### phase 20 — Web polish: show rate limit & next send time in UI
-Scope:
-- Makes take-home clearer.
-
-Tasks:
-- Dashboard:
-  - show user paid/free badge
-  - show computed “next allowed send time” (optional)
-- Timeline:
-  - show tooltip with status and scheduled time
-- Error handling improvements
-
-Tests:
-- Minimal UI regression test or snapshot.
-
----
-
-### phase 21 — End-to-end tests (Playwright) + reliability
-Scope:
-- Ensure core flows are covered.
-
-Tasks:
-- Playwright E2E:
-  1) login user1
-  2) create message on timeline
-  3) move message
-  4) cancel message
-  5) (optional) simulate gateway callback for delivered/received
-- Add helper to create messages via API for tests.
-
-Manual verify:
-- `pnpm -w e2e` runs locally.
-
----
+-- 
 
 ### phase 22 — Documentation: README + final SOT sync
 Scope:
@@ -702,13 +667,3 @@ Tasks:
   - Receipt tracking approach + macOS permissions (Automation, Full Disk Access)
   - Known limitations (if any) and how you’d improve
 - Ensure code matches SOT; update SOT if implementation required a small change.
-
----
-
-## Mandatory Human Checkpoints Summary
-Codex must stop and ask before finalizing:
-- A) canceled messages visibility on timeline (hide vs muted)
-- B) timeline granularity (hour vs 15/30 minute slots)
-- C) allowed handle types (phone/email/both)
-- D) final rate limit numbers for free vs paid
-- E) chat.db schema differences if receipt tracking fails

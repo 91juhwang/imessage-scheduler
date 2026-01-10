@@ -71,7 +71,7 @@ type RangeOption = "THIS_WEEK" | "LAST_WEEK" | "CUSTOM";
 
 function formatDateTime(dateString: string | null) {
   if (!dateString) {
-    return "—";
+    return "";
   }
   const date = new Date(dateString);
   return new Intl.DateTimeFormat("en-US", {
@@ -90,6 +90,21 @@ function truncate(value: string | null, length = 40) {
     return value;
   }
   return `${value.slice(0, length)}…`;
+}
+
+function getStatusBadgeClass(status: string) {
+  switch (status) {
+    case "QUEUED":
+      return "bg-yellow-100 text-zinc-900";
+    case "SENT":
+      return "bg-green-200/70 text-black";
+    case "DELIVERED":
+      return "bg-blue-300/50 text-black";
+    case "CANCELED":
+      return "bg-red-300/50 text-black";
+    default:
+      return "bg-zinc-100 text-zinc-900";
+  }
 }
 
 export function DashboardView() {
@@ -151,10 +166,16 @@ export function DashboardView() {
 
   const formattedMessages = useMemo(
     () =>
-      (data?.messages ?? []).map((message) => ({
-        ...message,
-        display_handle: normalizeUsPhone(message.to_handle)?.formatted ?? message.to_handle,
-      })),
+      (data?.messages ?? [])
+        .map((message) => ({
+          ...message,
+          display_handle: normalizeUsPhone(message.to_handle)?.formatted ?? message.to_handle,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.scheduled_for_utc).getTime() -
+            new Date(a.scheduled_for_utc).getTime(),
+        ),
     [data],
   );
 
@@ -262,11 +283,13 @@ export function DashboardView() {
                   <TableCell>{formatDateTime(message.scheduled_for_utc)}</TableCell>
                   <TableCell>{message.display_handle}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{message.status}</Badge>
+                    <Badge variant="secondary" className={getStatusBadgeClass(message.status)}>
+                      {message.status}
+                    </Badge>
                   </TableCell>
                   <TableCell>{message.attempt_count}</TableCell>
                   <TableCell className="max-w-[220px] truncate">
-                    {truncate(message.last_error)}
+                    {message.last_error}
                   </TableCell>
                   <TableCell>{formatDateTime(message.delivered_at)}</TableCell>
                   <TableCell>{formatDateTime(message.received_at)}</TableCell>
@@ -306,18 +329,23 @@ export function DashboardView() {
               </div>
               <div>
                 <p className="text-xs font-medium text-zinc-500">Status</p>
-                <Badge variant="secondary">{selectedMessage.status}</Badge>
+                <Badge
+                  variant="secondary"
+                  className={getStatusBadgeClass(selectedMessage.status)}
+                >
+                  {selectedMessage.status}
+                </Badge>
               </div>
               <div>
                 <p className="text-xs font-medium text-zinc-500">Message</p>
                 <p className="whitespace-pre-wrap text-zinc-900">
-                  {selectedMessage.body || "—"}
+                  {selectedMessage.body || ""}
                 </p>
               </div>
               <div>
                 <p className="text-xs font-medium text-zinc-500">Last error</p>
                 <p className="whitespace-pre-wrap text-zinc-900">
-                  {selectedMessage.last_error || "—"}
+                  {selectedMessage.last_error || ""}
                 </p>
               </div>
               <div>
