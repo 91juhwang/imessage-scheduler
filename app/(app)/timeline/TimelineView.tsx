@@ -36,6 +36,7 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
   const [draftTime, setDraftTime] = useState<Date | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingMessage, setEditingMessage] = useState<TimelineMessageItem | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const autoScrollFrame = useRef<number | null>(null);
   const autoScrollY = useRef(0);
   const [draggingMessageId, setDraggingMessageId] = useState<string | null>(null);
@@ -78,6 +79,38 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
     const key = `/api/messages?${params.toString()}`;
     mutate(key, { messages: initialMessages }, { revalidate: false });
   }, [initialDate, initialMessages, mutate]);
+
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) {
+      return;
+    }
+
+    const now = new Date();
+    const isToday =
+      startOfDay(selectedDate).getTime() === startOfDay(now).getTime();
+
+    if (!isToday) {
+      return;
+    }
+
+    const slotIndex = Math.floor(
+      (now.getHours() * 60 + now.getMinutes()) / SLOT_MINUTES,
+    );
+
+    window.requestAnimationFrame(() => {
+      const target = content.querySelector<HTMLElement>(
+        `[data-slot-index="${slotIndex}"]`,
+      );
+      if (!target) {
+        return;
+      }
+      const contentRect = content.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const top = targetRect.top - contentRect.top + content.scrollTop;
+      content.scrollTo({ top, behavior: "auto" });
+    });
+  }, [selectedDate]);
 
   const slots = useMemo(() => {
     const map = new Map<number, TimelineMessageItem[]>();
@@ -308,7 +341,7 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 max-h-screen overflow-auto">
+      <CardContent ref={contentRef} className="space-y-4 max-h-screen overflow-auto">
         {error ? <p className="text-sm text-red-600">Unable to load messages.</p> : null}
         {isLoading ? (
           <p className="text-sm text-zinc-500">Loading timeline…</p>

@@ -43,7 +43,10 @@ export function TimelineSlotRow({
   const isDropTarget = dragOverSlotIndex === slotIndex;
 
   return (
-    <div className="grid grid-cols-[90px_minmax(0,1fr)] border-b last:border-b-0">
+    <div
+      className="grid grid-cols-[90px_minmax(0,1fr)] border-b last:border-b-0"
+      data-slot-index={slotIndex}
+    >
       <div className="border-r bg-indigo-50 px-3 py-3 text-xs font-semibold text-zinc-600">
         {label}
       </div>
