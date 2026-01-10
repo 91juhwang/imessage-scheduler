@@ -62,7 +62,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
       }),
     });
 
-    const response = await PATCH(request, { params: { id: messageId } });
+    const response = await PATCH(request, { params: Promise.resolve({ id: messageId }) });
     expect(response.status).toBe(200);
 
     const updated = await getMessageById(messageId);
@@ -115,7 +115,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
       }),
     });
 
-    const response = await PATCH(request, { params: { id: messageId } });
+    const response = await PATCH(request, { params: Promise.resolve({ id: messageId }) });
     expect(response.status).toBe(409);
   });
 
@@ -160,7 +160,7 @@ describe.skipIf(!hasDatabase)("messages update api", () => {
       },
     );
 
-    const response = await POST(request, { params: { id: messageId } });
+    const response = await POST(request, { params: Promise.resolve({ id: messageId }) });
     expect(response.status).toBe(200);
 
     const canceled = await getMessageById(messageId);
