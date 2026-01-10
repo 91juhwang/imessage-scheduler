@@ -1,6 +1,12 @@
 export { hashBody } from "./crypto";
 export { formatUsPhoneDigits, isValidUsPhone, normalizeUsPhone } from "./phone";
 export type { NormalizedPhone } from "./phone";
+export { applySend, evaluateRateLimit, normalizeWindow } from "./rate-limit";
+export type {
+  RateLimitConfig,
+  RateLimitDecision,
+  RateLimitRow,
+} from "./rate-limit";
 export {
   CreateMessageInputSchema,
   GatewaySendRequestSchema,
