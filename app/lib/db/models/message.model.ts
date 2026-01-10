@@ -117,7 +117,16 @@ export async function updateMessageById(
 
 export type MessageListRow = Pick<
   MessageRow,
-  "id" | "scheduledForUtc" | "toHandle" | "status" | "body"
+  | "id"
+  | "scheduledForUtc"
+  | "toHandle"
+  | "status"
+  | "body"
+  | "attemptCount"
+  | "lastError"
+  | "deliveredAt"
+  | "receivedAt"
+  | "receiptCorrelation"
 >;
 
 export type MessageListFilters = {
@@ -151,6 +160,11 @@ export async function listMessagesForUser(
       toHandle: messages.toHandle,
       status: messages.status,
       body: messages.body,
+      attemptCount: messages.attemptCount,
+      lastError: messages.lastError,
+      deliveredAt: messages.deliveredAt,
+      receivedAt: messages.receivedAt,
+      receiptCorrelation: messages.receiptCorrelation,
     })
     .from(messages)
     .where(and(...conditions));
