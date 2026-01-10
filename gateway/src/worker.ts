@@ -6,6 +6,7 @@ import type { GatewayEnv } from "./env";
 import { sendIMessage } from "./applescript";
 import { postGatewayStatus } from "./callback";
 import { getDb } from "./db";
+import { attemptReceiptCorrelation } from "./receipt";
 import { messages, userRateLimit, users } from "./schema";
 
 type MessageRow = {
@@ -349,12 +350,21 @@ async function runOnce(env: GatewayEnv) {
 
     try {
       await sendIMessage(candidate.toHandle, candidate.body);
+      const sentAt = new Date();
+      const correlation = await attemptReceiptCorrelation({
+        handle: candidate.toHandle,
+        body: candidate.body,
+        sentAt,
+      });
       await updateMessageSuccess(env, candidate.id);
       await updateRateLimitAfterSend(env, candidate.userId, paidUser, now, decision.normalized);
       await notifyStatus(env, {
         messageId: candidate.id,
         status: "SENT",
-        meta: { method: "applescript", sentAt: new Date().toISOString() },
+        meta: {
+          sendMethod: "applescript",
+          ...correlation,
+        },
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -365,7 +375,7 @@ async function runOnce(env: GatewayEnv) {
         await notifyStatus(env, {
           messageId: candidate.id,
           status: "FAILED",
-          meta: { method: "applescript", error: message },
+          meta: { sendMethod: "applescript", error: message },
         });
       }
     }

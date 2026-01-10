@@ -595,6 +595,7 @@ HUMAN CHECKPOINT D (required):
 ### phase 18 — Receipt tracking v1: correlation attempt + store receipt_correlation
 Scope:
 - Required first attempt for DELIVERED/RECEIVED.
+Status: [X] completed
 
 Tasks:
 - After SENT callback:

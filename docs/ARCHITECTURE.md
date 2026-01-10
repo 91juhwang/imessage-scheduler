@@ -294,6 +294,7 @@ Approach:
 - After SENT:
   - compute bodyHash and store in receipt_correlation
 - Correlate in Messages storage (likely `~/Library/Messages/chat.db`)
+  - gateway reads chat.db directly with sqlite (requires Full Disk Access for the gateway process)
   - locate message row for handle in a time window
   - store messageRowId/chatGuid if found
 - Poll for fields indicating delivered/read if available

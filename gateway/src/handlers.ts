@@ -76,7 +76,7 @@ async function handleSend(
       messageId: parsed.data.messageId,
       status: "SENT",
       payload: {
-        method: "applescript",
+        sendMethod: "applescript",
         sentAt: new Date().toISOString(),
       },
     };
@@ -93,7 +93,7 @@ async function handleSend(
       messageId: parsed.data.messageId,
       status: "FAILED",
       payload: {
-        method: "applescript",
+        sendMethod: "applescript",
         error: message,
       },
     };
