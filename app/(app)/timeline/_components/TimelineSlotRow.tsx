@@ -10,6 +10,9 @@ type TimelineSlotRowProps = {
   slotIndex: number;
   messages: TimelineMessageItem[];
   onSelectSlot: (slotIndex: number) => void;
+  onEditMessage: (message: TimelineMessageItem) => void;
+  onMoveMessage: (messageId: string, slotIndex: number) => void;
+  onSlotDragOver: (clientY: number) => void;
 };
 
 export function TimelineSlotRow({
@@ -17,6 +20,9 @@ export function TimelineSlotRow({
   slotIndex,
   messages,
   onSelectSlot,
+  onEditMessage,
+  onMoveMessage,
+  onSlotDragOver,
 }: TimelineSlotRowProps) {
   const timeFormatter = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
@@ -40,13 +46,34 @@ export function TimelineSlotRow({
             onSelectSlot(slotIndex);
           }
         }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          onSlotDragOver(event.clientY);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          const messageId = event.dataTransfer.getData("text/plain");
+          if (messageId) {
+            onMoveMessage(messageId, slotIndex);
+          }
+        }}
+        data-testid={`slot-${slotIndex}`}
       >
         <div className="flex flex-col gap-2">
           {messages.map((message) => (
             <div
               key={message.id}
-              className="rounded-md bg-indigo-300/15 px-3 py-2 text-xs"
-              onClick={(event) => event.stopPropagation()}
+              className="rounded-md bg-indigo-300/15 px-3 py-2 text-xs hover:cursor-pointer"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEditMessage(message);
+              }}
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.setData("text/plain", message.id);
+                event.dataTransfer.effectAllowed = "move";
+              }}
+              data-testid="timeline-message"
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium text-zinc-800">

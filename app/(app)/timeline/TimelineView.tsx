@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import useSWR, { useSWRConfig } from "swr";
@@ -37,6 +37,9 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [draftTime, setDraftTime] = useState<Date | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<TimelineMessageItem | null>(null);
+  const autoScrollFrame = useRef<number | null>(null);
+  const autoScrollY = useRef(0);
 
   const messagesKey = useMemo(() => {
     const start = startOfDay(selectedDate);
@@ -80,8 +83,13 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
     const map = new Map<number, TimelineMessageItem[]>();
 
     for (const message of messageData?.messages ?? []) {
+      if (message.status === "CANCELED") {
+        continue;
+      }
       const scheduled = new Date(message.scheduled_for_utc);
-      const slotIndex = scheduled.getHours() * 2 + Math.floor(scheduled.getMinutes() / 30);
+      const slotIndex =
+        scheduled.getHours() * (60 / SLOT_MINUTES) +
+        Math.floor(scheduled.getMinutes() / SLOT_MINUTES);
       const list = map.get(slotIndex) ?? [];
       list.push(message);
       map.set(slotIndex, list);
@@ -114,6 +122,7 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
     }
 
     setDraftTime(scheduled);
+    setEditingMessage(null);
     setIsDialogOpen(true);
   };
 
@@ -124,35 +133,131 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
   }) => {
     const scheduledLocal = payload.scheduledAt;
     if (!payload.toHandle.trim() || !payload.body.trim()) {
-      toast.error("Recipient and message body are required.");
+      toast.error("Phone number and message body are required.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          to_handle: payload.toHandle.trim(),
-          body: payload.body.trim(),
-          scheduled_for_local: formatIsoWithOffset(scheduledLocal),
-          timezone: LOCAL_TIMEZONE,
-        }),
-      });
+      const response = await fetch(
+        editingMessage ? `/api/messages/${editingMessage.id}` : "/api/messages",
+        {
+          method: editingMessage ? "PATCH" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            to_handle: payload.toHandle.trim(),
+            body: payload.body.trim(),
+            scheduled_for_local: formatIsoWithOffset(scheduledLocal),
+            timezone: LOCAL_TIMEZONE,
+          }),
+        },
+      );
 
       if (!response.ok) {
         throw new Error("Failed to schedule message.");
       }
 
       setIsDialogOpen(false);
+      setEditingMessage(null);
       await mutate(messagesKey);
     } catch (err) {
-      toast.error("Unable to schedule message.");
+      toast.error(editingMessage ? "Unable to update message." : "Unable to schedule message.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditMessage = (message: TimelineMessageItem) => {
+    if (message.status !== "QUEUED") {
+      toast.error("Only queued messages can be edited.");
+      return;
+    }
+    setEditingMessage(message);
+    setDraftTime(new Date(message.scheduled_for_utc));
+    setIsDialogOpen(true);
+  };
+
+  const handleMoveMessage = async (messageId: string, slotIndex: number) => {
+    const hours = Math.floor((slotIndex * SLOT_MINUTES) / 60);
+    const minutes = (slotIndex * SLOT_MINUTES) % 60;
+    const scheduled = new Date(selectedDate);
+    scheduled.setHours(hours, minutes, 0, 0);
+
+    if (scheduled.getTime() <= Date.now()) {
+      toast.error("Choose a future time slot.");
+      return;
+    }
+
+    const targetMessage = messageData?.messages.find((message) => message.id === messageId);
+    if (targetMessage && targetMessage.status !== "QUEUED") {
+      toast.error("Only queued messages can be moved.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          scheduled_for_local: formatIsoWithOffset(scheduled),
+          timezone: LOCAL_TIMEZONE,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to move message.");
+      }
+
+      await mutate(messagesKey);
+    } catch (err) {
+      toast.error("Unable to move message.");
+    }
+  };
+
+  const handleCancelMessage = async () => {
+    if (!editingMessage) {
+      return;
+    }
+    if (editingMessage.status !== "QUEUED") {
+      toast.error("Only queued messages can be canceled.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/messages/${editingMessage.id}/cancel`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to cancel message.");
+      }
+      setIsDialogOpen(false);
+      setEditingMessage(null);
+      await mutate(messagesKey);
+    } catch (err) {
+      toast.error("Unable to cancel message.");
+    }
+  };
+
+  const handleSlotDragOver = (clientY: number) => {
+    autoScrollY.current = clientY;
+    if (autoScrollFrame.current !== null) {
+      return;
+    }
+
+    autoScrollFrame.current = window.requestAnimationFrame(() => {
+      const threshold = 80;
+      const speed = 18;
+      const y = autoScrollY.current;
+
+      if (y < threshold) {
+        window.scrollBy({ top: -speed });
+      } else if (y > window.innerHeight - threshold) {
+        window.scrollBy({ top: speed });
+      }
+
+      autoScrollFrame.current = null;
+    });
   };
 
   return (
@@ -196,6 +301,9 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
                 slotIndex={slotIndex}
                 messages={cellMessages}
                 onSelectSlot={handleOpenDraft}
+                onEditMessage={handleEditMessage}
+                onMoveMessage={handleMoveMessage}
+                onSlotDragOver={handleSlotDragOver}
               />
             );
           })}
@@ -204,10 +312,18 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
 
       <TimelineMessageDialog
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditingMessage(null);
+          }
+        }}
         defaultScheduledAt={draftTime}
         timezone={LOCAL_TIMEZONE}
         isSubmitting={isSubmitting}
+        mode={editingMessage ? "edit" : "create"}
+        message={editingMessage}
+        onCancel={editingMessage ? handleCancelMessage : undefined}
         onSubmit={handleSubmit}
       />
     </Card>

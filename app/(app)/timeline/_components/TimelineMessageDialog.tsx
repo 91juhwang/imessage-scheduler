@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 
-import { startOfDay } from "../timeline-helpers";
+import { formatDateKey, parseDateKey, startOfDay } from "../timeline-helpers";
 
 type TimelineMessageDialogProps = {
   open: boolean;
@@ -26,6 +26,14 @@ type TimelineMessageDialogProps = {
   defaultScheduledAt: Date | null;
   timezone: string;
   isSubmitting: boolean;
+  mode?: "create" | "edit";
+  message?: {
+    id: string;
+    to_handle: string;
+    body?: string | null;
+    scheduled_for_utc: string;
+  } | null;
+  onCancel?: () => Promise<void>;
   onSubmit: (payload: {
     toHandle: string;
     body: string;
@@ -39,43 +47,66 @@ export function TimelineMessageDialog({
   defaultScheduledAt,
   timezone,
   isSubmitting,
+  mode = "create",
+  message,
+  onCancel,
   onSubmit,
 }: TimelineMessageDialogProps) {
   const [scheduledValue, setScheduledValue] = useState("");
+  const [scheduledDateValue, setScheduledDateValue] = useState("");
   const [toHandle, setToHandle] = useState("");
   const [body, setBody] = useState("");
 
-  const dateLabel = defaultScheduledAt
+  const baseDate = message ? new Date(message.scheduled_for_utc) : defaultScheduledAt;
+
+  const dateLabel = baseDate
     ? new Intl.DateTimeFormat("en-US", {
         weekday: "long",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }).format(defaultScheduledAt)
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(baseDate)
     : "Unknown date";
 
-  const minTime = defaultScheduledAt
-    ? startOfDay(defaultScheduledAt).getTime() === startOfDay(new Date()).getTime()
+  const activeDate = mode === "edit" ? parseDateKey(scheduledDateValue) : baseDate;
+  const minTime = activeDate
+    ? startOfDay(activeDate).getTime() === startOfDay(new Date()).getTime()
       ? formatTimeInputValue(new Date())
       : undefined
     : undefined;
+  const minDate = formatDateKey(new Date());
 
   useEffect(() => {
     if (!open) {
       return;
     }
-    setScheduledValue(defaultScheduledAt ? formatTimeInputValue(defaultScheduledAt) : "");
-    setToHandle("");
-    setBody("");
-  }, [open, defaultScheduledAt]);
+    if (mode === "edit" && message) {
+      const scheduledAt = new Date(message.scheduled_for_utc);
+      setScheduledValue(formatTimeInputValue(scheduledAt));
+      setScheduledDateValue(formatDateKey(scheduledAt));
+      setToHandle(normalizeUsPhone(message.to_handle)?.formatted ?? message.to_handle);
+      setBody(message.body ?? "");
+    } else {
+      setScheduledValue(baseDate ? formatTimeInputValue(baseDate) : "");
+      setScheduledDateValue(baseDate ? formatDateKey(baseDate) : "");
+      setToHandle("");
+      setBody("");
+    }
+  }, [baseDate, message, mode, open]);
 
   const handleSubmit = async () => {
-    if (!defaultScheduledAt) {
+    if (!baseDate) {
       toast.error("Choose a valid scheduled time.");
       return;
     }
 
-    const scheduledAt = parseTimeInputValue(defaultScheduledAt, scheduledValue);
+    const targetDate = mode === "edit" ? parseDateKey(scheduledDateValue) : baseDate;
+    if (!targetDate) {
+      toast.error("Choose a valid scheduled date.");
+      return;
+    }
+
+    const scheduledAt = parseTimeInputValue(targetDate, scheduledValue);
     if (!scheduledAt) {
       toast.error("Choose a valid scheduled time.");
       return;
@@ -102,9 +133,13 @@ export function TimelineMessageDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Schedule message</DialogTitle>
+          <DialogTitle>
+            {mode === "edit" ? "Edit message" : "Schedule message"}
+          </DialogTitle>
           <DialogDescription>
-            Create a new iMessage for this timeline slot.
+            {mode === "edit"
+              ? "Update the message details and scheduled time."
+              : "Create a new iMessage for this timeline slot."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -152,10 +187,26 @@ export function TimelineMessageDialog({
               value={scheduledValue}
               onChange={(event) => setScheduledValue(event.target.value)}
               min={minTime}
+              step={900}
             />
-            <div className="text-xs text-zinc-500">
-              Date: <span className="font-medium text-zinc-700">{dateLabel}</span>
-            </div>
+            {mode === "edit" ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700" htmlFor="scheduled-date">
+                  Scheduled date
+                </label>
+                <Input
+                  id="scheduled-date"
+                  type="date"
+                  value={scheduledDateValue}
+                  onChange={(event) => setScheduledDateValue(event.target.value)}
+                  min={minDate}
+                />
+              </div>
+            ) : (
+              <div className="text-xs text-zinc-500">
+                Date: <span className="font-medium text-zinc-700">{dateLabel}</span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-xs text-zinc-500">
               <span>Timezone</span>
               <Badge variant="outline" className="text-[10px]">
@@ -165,12 +216,27 @@ export function TimelineMessageDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Scheduling..." : "Schedule"}
-          </Button>
+          <div className="justify-between flex flex-1 items-center">
+            {mode === "edit" && onCancel ? (
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  await onCancel();
+                }}
+                disabled={isSubmitting}
+              >
+                Delete
+              </Button>
+            ) : null}
+            <div className="gap-2 flex">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "edit" ? "Save" : "Schedule"}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

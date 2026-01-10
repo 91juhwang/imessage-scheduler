@@ -93,6 +93,7 @@ export async function GET(request: Request) {
       scheduled_for_utc: message.scheduledForUtc.toISOString(),
       to_handle: message.toHandle,
       status: message.status,
+      body: message.body,
       body_preview: message.body.slice(0, 120),
     })),
   });

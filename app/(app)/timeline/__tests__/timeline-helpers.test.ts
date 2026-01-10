@@ -24,10 +24,11 @@ function formatOffsetForDate(date: Date) {
 
 describe("timeline-helpers", () => {
   it("builds slot labels for 30 minute increments", () => {
-    expect(SLOT_MINUTES).toBe(30);
-    expect(SLOT_LABELS).toHaveLength(48);
+    expect(SLOT_MINUTES).toBe(15);
+    expect(SLOT_LABELS).toHaveLength(96);
     expect(SLOT_LABELS[0]).toBe("12:00 AM");
-    expect(SLOT_LABELS[1]).toBe("12:30 AM");
+    expect(SLOT_LABELS[1]).toBe("12:15 AM");
+    expect(SLOT_LABELS[2]).toBe("12:30 AM");
   });
 
   it("normalizes dates to start of day", () => {

@@ -1,5 +1,5 @@
-const SLOT_COUNT = 48;
-const SLOT_MINUTES = 30;
+const SLOT_COUNT = 96;
+const SLOT_MINUTES = 15;
 
 const SLOT_LABELS = Array.from({ length: SLOT_COUNT }, (_, index) => {
   const totalMinutes = index * SLOT_MINUTES;

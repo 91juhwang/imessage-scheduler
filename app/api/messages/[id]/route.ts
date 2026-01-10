@@ -18,7 +18,7 @@ function parseScheduledDate(value: string | undefined) {
 
 export async function PATCH(
   request: Request,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
   const user = await getUserFromRequest(request);
   if (!user) {
@@ -32,7 +32,8 @@ export async function PATCH(
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   }
 
-  const message = await getMessageById(context.params.id);
+  const { id } = await context.params;
+  const message = await getMessageById(id);
   if (!message || message.userId !== user.id) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }

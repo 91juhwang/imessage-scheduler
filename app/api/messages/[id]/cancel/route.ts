@@ -9,14 +9,15 @@ import { isImmutableStatus } from "../status";
 
 export async function POST(
   request: Request,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
   const user = await getUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const message = await getMessageById(context.params.id);
+  const { id } = await context.params;
+  const message = await getMessageById(id);
   if (!message || message.userId !== user.id) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }

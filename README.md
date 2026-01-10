@@ -70,6 +70,13 @@ Seeded users:
 - user1@example.com (free) / password123
 - user2@example.com (paid) / password123
 
+### Usage
+
+- Create a schedule by clicking on the timeline
+- **Drag & Drop** to modify the schedule
+- Click to edit or cancel
+- Go to Dashboard to see the history & status
+
 ## Tech Stack
 
 - NextJS
