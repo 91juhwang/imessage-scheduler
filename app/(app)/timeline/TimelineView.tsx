@@ -256,6 +256,44 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
     }
   };
 
+  const handleDuplicateMessage = async (message: TimelineMessageItem) => {
+    const body = message.body?.trim() ?? "";
+    if (!message.to_handle.trim() || !body) {
+      toast.error("Message details are incomplete.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const scheduledAt = new Date(message.scheduled_for_utc);
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          to_handle: message.to_handle,
+          body,
+          scheduled_for_local: formatIsoWithOffset(scheduledAt),
+          timezone: LOCAL_TIMEZONE,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast.error("Rate limit reached. Try again later.");
+          return;
+        }
+        throw new Error("Failed to duplicate message.");
+      }
+
+      await mutate(messagesKey);
+      toast.success("Message duplicated.");
+    } catch (err) {
+      toast.error("Unable to duplicate message.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleCancelMessage = async () => {
     if (!editingMessage) {
       return;
@@ -359,6 +397,7 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
                 onSelectSlot={handleOpenDraft}
                 onEditMessage={handleEditMessage}
                 onMoveMessage={handleMoveMessage}
+                onDuplicateMessage={handleDuplicateMessage}
                 onSlotDragOver={handleSlotDragOver}
                 onMessageDragStart={handleMessageDragStart}
                 onMessageDragEnd={handleMessageDragEnd}

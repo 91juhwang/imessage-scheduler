@@ -4,6 +4,7 @@ import { GripVertical } from "lucide-react";
 
 import { normalizeUsPhone } from "@imessage-scheduler/shared";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 import type { TimelineMessageItem } from "../timeline-types";
@@ -15,6 +16,7 @@ type TimelineSlotRowProps = {
   onSelectSlot: (slotIndex: number) => void;
   onEditMessage: (message: TimelineMessageItem) => void;
   onMoveMessage: (messageId: string, slotIndex: number) => void;
+  onDuplicateMessage: (message: TimelineMessageItem) => void;
   onSlotDragOver: (slotIndex: number, clientY: number) => void;
   onMessageDragStart: (messageId: string, event: React.DragEvent<HTMLSpanElement>) => void;
   onMessageDragEnd: () => void;
@@ -29,6 +31,7 @@ export function TimelineSlotRow({
   onSelectSlot,
   onEditMessage,
   onMoveMessage,
+  onDuplicateMessage,
   onSlotDragOver,
   onMessageDragStart,
   onMessageDragEnd,
@@ -106,13 +109,27 @@ export function TimelineSlotRow({
                   <GripVertical className="h-4 w-4" />
                 </span>
                 <div className="flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-zinc-800">
+                  <div className="flex items-center justify-between ">
+                    <span className="font-medium text-zinc-800 justify-start">
                       {normalizeUsPhone(message.to_handle)?.formatted ?? message.to_handle}
                     </span>
-                    <Badge variant="secondary" className="text-[9px] bg-yellow-100">
-                      {message.status}
-                    </Badge>
+                    <div className="flex items-end ">
+                      <Badge variant="secondary" className="text-[9px] bg-yellow-100">
+                        {message.status}
+                      </Badge>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-5 px-1.5 ml-1 text-[10px]"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDuplicateMessage(message);
+                        }}
+                      >
+                        Duplicate
+                      </Button>
+                    </div>
                   </div>
                   <div className="mt-1 text-[10px] text-zinc-700">
                     {timeFormatter.format(new Date(message.scheduled_for_utc))}
