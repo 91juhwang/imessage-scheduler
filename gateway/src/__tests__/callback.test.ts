@@ -16,6 +16,10 @@ describe("postGatewayStatus", () => {
       maxAttempts: 5,
       baseBackoffSeconds: 30,
       maxBackoffSeconds: 1800,
+      freeMinIntervalSeconds: 0,
+      paidMinIntervalSeconds: 0,
+      freeMaxPerHour: 2,
+      paidMaxPerHour: 30,
     };
 
     let capturedHeaders: Record<string, string> | null = null;

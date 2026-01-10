@@ -14,6 +14,10 @@ const EnvSchema = z.object({
   MAX_ATTEMPTS: z.string().optional(),
   BASE_BACKOFF_SECONDS: z.string().optional(),
   MAX_BACKOFF_SECONDS: z.string().optional(),
+  FREE_MIN_INTERVAL_SECONDS: z.string().optional(),
+  PAID_MIN_INTERVAL_SECONDS: z.string().optional(),
+  FREE_MAX_PER_HOUR: z.string().optional(),
+  PAID_MAX_PER_HOUR: z.string().optional(),
 });
 
 type GatewayEnv = {
@@ -27,6 +31,10 @@ type GatewayEnv = {
   maxAttempts: number;
   baseBackoffSeconds: number;
   maxBackoffSeconds: number;
+  freeMinIntervalSeconds: number;
+  paidMinIntervalSeconds: number;
+  freeMaxPerHour: number;
+  paidMaxPerHour: number;
 };
 
 function parseGatewayEnv(): GatewayEnv {
@@ -52,6 +60,10 @@ function parseGatewayEnv(): GatewayEnv {
   const maxAttempts = Number(parsed.data.MAX_ATTEMPTS ?? 5);
   const baseBackoffSeconds = Number(parsed.data.BASE_BACKOFF_SECONDS ?? 30);
   const maxBackoffSeconds = Number(parsed.data.MAX_BACKOFF_SECONDS ?? 1800);
+  const freeMinIntervalSeconds = Number(parsed.data.FREE_MIN_INTERVAL_SECONDS ?? 0);
+  const paidMinIntervalSeconds = Number(parsed.data.PAID_MIN_INTERVAL_SECONDS ?? 0);
+  const freeMaxPerHour = Number(parsed.data.FREE_MAX_PER_HOUR ?? 2);
+  const paidMaxPerHour = Number(parsed.data.PAID_MAX_PER_HOUR ?? 30);
 
   if (Number.isNaN(workerPollIntervalMs)) {
     throw new Error("WORKER_POLL_INTERVAL_MS must be a number.");
@@ -65,6 +77,18 @@ function parseGatewayEnv(): GatewayEnv {
   if (Number.isNaN(maxBackoffSeconds)) {
     throw new Error("MAX_BACKOFF_SECONDS must be a number.");
   }
+  if (Number.isNaN(freeMinIntervalSeconds)) {
+    throw new Error("FREE_MIN_INTERVAL_SECONDS must be a number.");
+  }
+  if (Number.isNaN(paidMinIntervalSeconds)) {
+    throw new Error("PAID_MIN_INTERVAL_SECONDS must be a number.");
+  }
+  if (Number.isNaN(freeMaxPerHour)) {
+    throw new Error("FREE_MAX_PER_HOUR must be a number.");
+  }
+  if (Number.isNaN(paidMaxPerHour)) {
+    throw new Error("PAID_MAX_PER_HOUR must be a number.");
+  }
 
   return {
     gatewaySecret: parsed.data.GATEWAY_SECRET,
@@ -77,6 +101,10 @@ function parseGatewayEnv(): GatewayEnv {
     maxAttempts,
     baseBackoffSeconds,
     maxBackoffSeconds,
+    freeMinIntervalSeconds,
+    paidMinIntervalSeconds,
+    freeMaxPerHour,
+    paidMaxPerHour,
   };
 }
 

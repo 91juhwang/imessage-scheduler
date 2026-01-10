@@ -1,5 +1,6 @@
 // Just for typescript definition - not transpiled
 import {
+  boolean,
   datetime,
   int,
   mysqlEnum,
@@ -33,4 +34,16 @@ export const messages = mysqlTable("messages", {
   createdAt: datetime("created_at").notNull(),
   updatedAt: datetime("updated_at").notNull(),
   canceledAt: datetime("canceled_at"),
+});
+
+export const users = mysqlTable("users", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  paidUser: boolean("paid_user").notNull(),
+});
+
+export const userRateLimit = mysqlTable("user_rate_limit", {
+  userId: varchar("user_id", { length: 36 }).primaryKey(),
+  lastSentAt: datetime("last_sent_at"),
+  windowStartedAt: datetime("window_started_at"),
+  sentInWindow: int("sent_in_window").notNull(),
 });
