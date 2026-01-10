@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { hashPassword } from "../auth/password";
-import { pool } from "./index";
+import { getPool } from "./index";
 import { createRateLimitRow, getRateLimitByUserId } from "./models/rate_limit.model";
 import { createUser, getUserByEmail } from "./models/user.model";
 
@@ -68,7 +68,7 @@ async function seed() {
 
     console.log("Seeded users and rate limit rows.");
   } finally {
-    await pool.end();
+    await getPool().end();
   }
 }
 

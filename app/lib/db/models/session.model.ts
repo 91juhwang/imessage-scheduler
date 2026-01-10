@@ -1,6 +1,6 @@
 import { and, eq, gt } from "drizzle-orm";
 
-import { db } from "../index";
+import { getDb } from "../index";
 import { sessions } from "../schema";
 
 export type SessionRow = {
@@ -13,14 +13,14 @@ export type SessionRow = {
 export type CreateSessionInput = SessionRow;
 
 export async function createSessionRow(input: CreateSessionInput) {
-  await db.insert(sessions).values(input);
+  await getDb().insert(sessions).values(input);
   return input;
 }
 
 export async function getSessionById(
   sessionId: string,
 ): Promise<SessionRow | null> {
-  const rows = await db
+  const rows = await getDb()
     .select({
       id: sessions.id,
       userId: sessions.userId,
@@ -35,12 +35,14 @@ export async function getSessionById(
 }
 
 export async function deleteSessionById(sessionId: string): Promise<number> {
-  const [result] = await db.delete(sessions).where(eq(sessions.id, sessionId));
+  const [result] = await getDb()
+    .delete(sessions)
+    .where(eq(sessions.id, sessionId));
   return result.affectedRows ?? 0;
 }
 
 export async function isSessionActive(sessionId: string): Promise<boolean> {
-  const rows = await db
+  const rows = await getDb()
     .select({ id: sessions.id })
     .from(sessions)
     .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))

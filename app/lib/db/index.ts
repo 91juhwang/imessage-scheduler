@@ -1,8 +1,29 @@
 import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import mysql, { type Pool } from "mysql2/promise";
 
-import { env } from "../env";
+let pool: Pool | null = null;
+let db: ReturnType<typeof drizzle> | null = null;
 
-export const pool = mysql.createPool({ uri: env.DATABASE_URL });
+function initDb() {
+  if (db) {
+    return db;
+  }
 
-export const db = drizzle(pool);
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required");
+  }
+
+  pool = mysql.createPool({ uri: databaseUrl });
+  db = drizzle(pool);
+  return db;
+}
+
+export function getDb() {
+  return initDb();
+}
+
+export function getPool() {
+  initDb();
+  return pool!;
+}

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "../index";
+import { getDb } from "../index";
 import { userRateLimit } from "../schema";
 
 export type RateLimitRow = {
@@ -18,7 +18,7 @@ export type UpdateRateLimitPatch = Partial<
 export async function getRateLimitByUserId(
   userId: string,
 ): Promise<RateLimitRow | null> {
-  const rows = await db
+  const rows = await getDb()
     .select({
       userId: userRateLimit.userId,
       lastSentAt: userRateLimit.lastSentAt,
@@ -33,7 +33,7 @@ export async function getRateLimitByUserId(
 }
 
 export async function createRateLimitRow(input: CreateRateLimitInput) {
-  await db.insert(userRateLimit).values(input);
+  await getDb().insert(userRateLimit).values(input);
   return input;
 }
 
@@ -44,7 +44,7 @@ export async function updateRateLimitByUserId(
   if (Object.keys(patch).length === 0) {
     return 0;
   }
-  const [result] = await db
+  const [result] = await getDb()
     .update(userRateLimit)
     .set(patch)
     .where(eq(userRateLimit.userId, userId));

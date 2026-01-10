@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "../index";
+import { getDb } from "../index";
 import { users } from "../schema";
 
 export type UserRow = {
@@ -15,7 +15,7 @@ export type CreateUserInput = UserRow;
 export type UpdateUserPatch = Partial<Pick<UserRow, "email" | "passwordHash" | "paidUser">>;
 
 export async function getUserByEmail(email: string): Promise<UserRow | null> {
-  const rows = await db
+  const rows = await getDb()
     .select({
       id: users.id,
       email: users.email,
@@ -31,7 +31,7 @@ export async function getUserByEmail(email: string): Promise<UserRow | null> {
 }
 
 export async function getUserById(id: string): Promise<UserRow | null> {
-  const rows = await db
+  const rows = await getDb()
     .select({
       id: users.id,
       email: users.email,
@@ -47,7 +47,7 @@ export async function getUserById(id: string): Promise<UserRow | null> {
 }
 
 export async function createUser(input: CreateUserInput) {
-  await db.insert(users).values(input);
+  await getDb().insert(users).values(input);
   return input;
 }
 
@@ -55,6 +55,9 @@ export async function updateUserById(id: string, patch: UpdateUserPatch) {
   if (Object.keys(patch).length === 0) {
     return 0;
   }
-  const [result] = await db.update(users).set(patch).where(eq(users.id, id));
+  const [result] = await getDb()
+    .update(users)
+    .set(patch)
+    .where(eq(users.id, id));
   return result.affectedRows ?? 0;
 }

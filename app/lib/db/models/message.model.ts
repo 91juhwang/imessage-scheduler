@@ -1,6 +1,6 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 
-import { db } from "../index";
+import { getDb } from "../index";
 import { messages } from "../schema";
 
 export type MessageStatus =
@@ -60,12 +60,12 @@ export type UpdateMessagePatch = Partial<
 >;
 
 export async function createMessage(input: CreateMessageInput) {
-  await db.insert(messages).values(input);
+  await getDb().insert(messages).values(input);
   return input;
 }
 
 export async function getMessageById(id: string): Promise<MessageRow | null> {
-  const rows = await db
+  const rows = await getDb()
     .select({
       id: messages.id,
       userId: messages.userId,
@@ -108,7 +108,10 @@ export async function updateMessageById(
   if (Object.keys(patch).length === 0) {
     return 0;
   }
-  const [result] = await db.update(messages).set(patch).where(eq(messages.id, id));
+  const [result] = await getDb()
+    .update(messages)
+    .set(patch)
+    .where(eq(messages.id, id));
   return result.affectedRows ?? 0;
 }
 
@@ -141,7 +144,7 @@ export async function listMessagesForUser(
     conditions.push(eq(messages.status, filters.status));
   }
 
-  return db
+  return getDb()
     .select({
       id: messages.id,
       scheduledForUtc: messages.scheduledForUtc,
