@@ -1,5 +1,5 @@
-const SLOT_COUNT = 96;
-const SLOT_MINUTES = 15;
+const SLOT_COUNT = 48;
+const SLOT_MINUTES = 30;
 
 const SLOT_LABELS = Array.from({ length: SLOT_COUNT }, (_, index) => {
   const totalMinutes = index * SLOT_MINUTES;
@@ -81,6 +81,25 @@ function formatDateLabel(date: Date) {
   }).format(date);
 }
 
+function formatTimeInputValue(date: Date) {
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function parseTimeInputValue(baseDate: Date, value: string) {
+  if (!value) {
+    return null;
+  }
+  const [hours, minutes] = value.split(":").map(Number);
+  if ([hours, minutes].some((entry) => Number.isNaN(entry))) {
+    return null;
+  }
+  const scheduled = new Date(baseDate);
+  scheduled.setHours(hours, minutes, 0, 0);
+  return scheduled;
+}
+
 function formatDateKey(date: Date) {
   return [
     date.getFullYear(),
@@ -107,9 +126,11 @@ export {
   addDays,
   formatDateLabel,
   formatDateKey,
+  formatTimeInputValue,
   formatDateTimeInputValue,
   formatIsoWithOffset,
   parseDateKey,
   parseDateTimeInputValue,
+  parseTimeInputValue,
   startOfDay,
 };

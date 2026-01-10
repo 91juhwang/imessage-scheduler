@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ChevronDownIcon } from "lucide-react";
 
 import { formatUsPhoneDigits, normalizeUsPhone } from "@imessage-scheduler/shared";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Calendar } from "@/components/ui/Calendar";
 import {
   Dialog,
   DialogContent,
@@ -16,9 +18,17 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { Textarea } from "@/components/ui/Textarea";
 
-import { formatDateKey, parseDateKey, startOfDay } from "../timeline-helpers";
+import {
+  formatDateKey,
+  formatTimeInputValue,
+  parseDateKey,
+  parseTimeInputValue,
+  startOfDay,
+} from "../timeline-helpers";
 
 type TimelineMessageDialogProps = {
   open: boolean;
@@ -56,12 +66,14 @@ export function TimelineMessageDialog({
   const [scheduledDateValue, setScheduledDateValue] = useState("");
   const [toHandle, setToHandle] = useState("");
   const [body, setBody] = useState("");
+  const [isDateOpen, setIsDateOpen] = useState(false);
+  const initializedForId = useRef<string | null>(null);
 
   const baseDate = message ? new Date(message.scheduled_for_utc) : defaultScheduledAt;
 
   const dateLabel = baseDate
     ? new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
+      weekday: "long",
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -74,24 +86,31 @@ export function TimelineMessageDialog({
       ? formatTimeInputValue(new Date())
       : undefined
     : undefined;
-  const minDate = formatDateKey(new Date());
+  const minDateValue = startOfDay(new Date());
 
   useEffect(() => {
     if (!open) {
+      initializedForId.current = null;
       return;
     }
     if (mode === "edit" && message) {
+      if (initializedForId.current === message.id) {
+        return;
+      }
       const scheduledAt = new Date(message.scheduled_for_utc);
       setScheduledValue(formatTimeInputValue(scheduledAt));
       setScheduledDateValue(formatDateKey(scheduledAt));
       setToHandle(normalizeUsPhone(message.to_handle)?.formatted ?? message.to_handle);
       setBody(message.body ?? "");
-    } else {
-      setScheduledValue(baseDate ? formatTimeInputValue(baseDate) : "");
-      setScheduledDateValue(baseDate ? formatDateKey(baseDate) : "");
-      setToHandle("");
-      setBody("");
+      initializedForId.current = message.id;
+      return;
     }
+
+    setScheduledValue(baseDate ? formatTimeInputValue(baseDate) : "");
+    setScheduledDateValue(baseDate ? formatDateKey(baseDate) : "");
+    setToHandle("");
+    setBody("");
+    initializedForId.current = null;
   }, [baseDate, message, mode, open]);
 
   const handleSubmit = async () => {
@@ -178,40 +197,64 @@ export function TimelineMessageDialog({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-700" htmlFor="scheduled-time">
-              Scheduled time
-            </label>
-            <Input
-              id="scheduled-time"
-              type="time"
-              value={scheduledValue}
-              onChange={(event) => setScheduledValue(event.target.value)}
-              min={minTime}
-              step={900}
-            />
-            {mode === "edit" ? (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-700" htmlFor="scheduled-date">
-                  Scheduled date
-                </label>
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
+              <div className="flex flex-col">
+                <Label htmlFor="date-picker" className="text-xs">
+                  Date
+                </Label>
+                {mode === "edit" ? (
+                  <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        id="date-picker"
+                        className="w-40 justify-between font-normal"
+                      >
+                        {scheduledDateValue || "Select date"}
+                        <ChevronDownIcon />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={parseDateKey(scheduledDateValue) ?? undefined}
+                        captionLayout="dropdown"
+                        disabled={(date) => startOfDay(date) < minDateValue}
+                        onSelect={(date) => {
+                          if (!date) {
+                            return;
+                          }
+                          setScheduledDateValue(formatDateKey(date));
+                          setIsDateOpen(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <Button
+                    variant="outline"
+                    id="date-picker"
+                    className="w-46 justify-between font-normal"
+                    disabled
+                  >
+                    {dateLabel}
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <Label htmlFor="time-picker" className=" text-xs">
+                  Time ({timezone})
+                </Label>
                 <Input
-                  id="scheduled-date"
-                  type="date"
-                  value={scheduledDateValue}
-                  onChange={(event) => setScheduledDateValue(event.target.value)}
-                  min={minDate}
+                  id="time-picker"
+                  type="time"
+                  value={scheduledValue}
+                  onChange={(event) => setScheduledValue(event.target.value)}
+                  min={minTime}
+                  step={1800}
+                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                 />
               </div>
-            ) : (
-              <div className="text-xs text-zinc-500">
-                Date: <span className="font-medium text-zinc-700">{dateLabel}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
-              <span>Timezone</span>
-              <Badge variant="outline" className="text-[10px]">
-                {timezone}
-              </Badge>
             </div>
           </div>
         </div>
@@ -228,36 +271,17 @@ export function TimelineMessageDialog({
                 Delete
               </Button>
             ) : null}
-            <div className="gap-2 flex">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "edit" ? "Save" : "Schedule"}
-              </Button>
-            </div>
+          </div>
+          <div className="gap-2 flex justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : mode === "edit" ? "Save" : "Schedule"}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-}
-
-function formatTimeInputValue(date: Date) {
-  const hours = date.getHours().toString().padStart(2, "0");
-  const minutes = date.getMinutes().toString().padStart(2, "0");
-  return `${hours}:${minutes}`;
-}
-
-function parseTimeInputValue(baseDate: Date, value: string) {
-  if (!value) {
-    return null;
-  }
-  const [hours, minutes] = value.split(":").map(Number);
-  if ([hours, minutes].some((entry) => Number.isNaN(entry))) {
-    return null;
-  }
-  const scheduled = new Date(baseDate);
-  scheduled.setHours(hours, minutes, 0, 0);
-  return scheduled;
 }
