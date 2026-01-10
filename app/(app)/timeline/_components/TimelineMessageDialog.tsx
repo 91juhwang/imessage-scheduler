@@ -252,6 +252,15 @@ export function TimelineMessageDialog({
                   type="time"
                   value={scheduledValue}
                   onChange={(event) => setScheduledValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") {
+                      return;
+                    }
+                    event.preventDefault();
+                    if (!isSubmitting) {
+                      void handleSubmit();
+                    }
+                  }}
                   min={minTime}
                   step={1800}
                   className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
