@@ -1,22 +1,65 @@
 import http from "node:http";
 
-const port = Number(process.env.GATEWAY_PORT ?? 4001);
+import { parseGatewayEnv } from "./env";
+import { handleHealth, handleSend } from "./handlers";
 
-const server = http.createServer((req, res) => {
-  if (req.method === "POST" && req.url === "/health") {
-    const body = JSON.stringify({ ok: true, timestamp: new Date().toISOString() });
-    res.writeHead(200, {
-      "Content-Type": "application/json",
-      "Content-Length": Buffer.byteLength(body),
+const env = parseGatewayEnv();
+
+function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let raw = "";
+    req.on("data", (chunk) => {
+      raw += chunk;
     });
-    res.end(body);
+    req.on("end", () => {
+      if (!raw) {
+        resolve(null);
+        return;
+      }
+      try {
+        resolve(JSON.parse(raw));
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+}
+
+function respond(res: http.ServerResponse, status: number, payload: Record<string, unknown>) {
+  const body = JSON.stringify(payload);
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+    "Content-Length": Buffer.byteLength(body),
+  });
+  res.end(body);
+}
+
+const server = http.createServer(async (req, res) => {
+  if (!req.url || req.method !== "POST") {
+    respond(res, 404, { error: "not_found" });
     return;
   }
 
-  res.writeHead(404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ error: "not_found" }));
+  if (req.url === "/health") {
+    const result = handleHealth(req.headers, env);
+    respond(res, result.status, result.json);
+    return;
+  }
+
+  if (req.url === "/send") {
+    try {
+      const body = await readJsonBody(req);
+      const result = await handleSend(req.headers, body, env);
+      respond(res, result.status, result.json);
+    } catch (error) {
+      respond(res, 400, { error: "invalid_json" });
+    }
+    return;
+  }
+
+  respond(res, 404, { error: "not_found" });
 });
 
-server.listen(port, () => {
-  console.log(`[gateway] listening on http://localhost:${port}`);
+server.listen(env.port, () => {
+  console.log(`[gateway] listening on http://localhost:${env.port}`);
 });

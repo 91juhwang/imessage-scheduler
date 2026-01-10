@@ -95,6 +95,12 @@ export async function GET(request: Request) {
       status: message.status,
       body: message.body,
       body_preview: message.body.slice(0, 120),
+      attempt_count: message.attemptCount,
+      last_error: message.lastError,
+      delivered_at: message.deliveredAt?.toISOString() ?? null,
+      received_at: message.receivedAt?.toISOString() ?? null,
+      receipt_correlation:
+        (message.receiptCorrelation as Record<string, unknown> | null) ?? null,
     })),
   });
 }

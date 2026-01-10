@@ -4,5 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@imessage-scheduler/shared": "workspace:*",
+    "zod": "^4.3.5"
   }
 }

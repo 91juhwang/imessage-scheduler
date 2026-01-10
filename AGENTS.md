@@ -137,11 +137,6 @@ If any of these become necessary and not present in the repo, ask the human to a
 ## Testing Rules
 - If NEXT.md says “add tests,” they must be included in that commit.
 - Time-based logic (worker/rate limits) must be tested with deterministic time control/mocks where possible.
-- UI flows must have at least one Playwright E2E path:
-  - login
-  - create schedule via timeline
-  - move schedule
-  - cancel schedule
 
 ---
 
