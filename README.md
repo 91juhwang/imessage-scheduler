@@ -1,12 +1,12 @@
 # iMessage Scheduler
 
-## Getting Started
+## Steps to run
 
 ```bash
 pnpm i
 ```
 
-### 1) Start MySQL (required)
+#### 1) Start MySQL (required)
 
 **Option A:** Docker
 
@@ -25,7 +25,7 @@ brew services start mysql
 mysql -uroot -e "CREATE DATABASE imessage_scheduler;"
 ```
 
-### 2) Configure env
+#### 2) Configure env
 
 ```bash
 cp .env.example .env
@@ -51,7 +51,7 @@ Docker users should use the default Docker password:
 DATABASE_URL=mysql://root:pass@localhost:3306/imessage_scheduler
 ```
 
-### 3) Migrate + seed
+#### 3) Migrate + seed
 
 ```bash
 pnpm db:generate
@@ -59,7 +59,7 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
-### 4) Run the app
+#### 4) Run the app
 
 ```bash
 # runs pnpm dev:web && pnpm dev:gateway
@@ -79,10 +79,12 @@ Seeded users:
 **Next.js (React + Node)** to keep UI and API logic cohesive and to demonstrate similar patterns used in Node/React production environments.
 
 ### Database
-**MySQL with Drizzle ORM** for its simplicity, easier setup and migration support. For this take-home, the data model and queue logic do not rely on Postgres-specific features, so MySQL keeps local setup lightweight.
+**MySQL with Drizzle ORM** for its simplicity, easier setup and migration support, keeps local setup lightweight.
 
-### Gateway
-small gateway server for iMessage automation requiring macOS, the gateway runs locally and sends messages via AppleScript, reporting status updates back to the web app.
+## Project Structure
+
+- `./db`
+- `./app/api/` API endpoints (auth, messages,  )
 
 ## Future improvements:
 - Full event/audit log

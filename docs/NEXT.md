@@ -300,7 +300,8 @@ Manual verify:
 
 ### phase 09 — Web UI: skeleton + navigation + login page
 Scope:
-- First usable UI for the take-home.
+- First usable UI
+Status: [X] completed
 
 Tasks:
 - Add shadcn/ui setup and global styles.
@@ -327,6 +328,7 @@ Manual verify:
 ### phase 10 — Timeline UI v1: week grid render-only
 Scope:
 - Timeline grid foundation.
+Status: [ ] in progress
 
 Tasks:
 - Create `/timeline` page:
