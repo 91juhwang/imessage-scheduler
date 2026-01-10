@@ -1,4 +1,8 @@
+import path from "node:path";
+import { config } from "dotenv";
 import { z } from "zod";
+
+config({ path: path.resolve(__dirname, "../../.env") });
 
 const EnvSchema = z.object({
   GATEWAY_SECRET: z.string().min(1),
@@ -28,7 +32,11 @@ type GatewayEnv = {
 function parseGatewayEnv(): GatewayEnv {
   const parsed = EnvSchema.safeParse(process.env);
   if (!parsed.success) {
-    throw new Error("Missing gateway env vars.");
+    const missing = parsed.error.issues
+      .map((issue) => issue.path.join("."))
+      .filter(Boolean)
+      .join(", ");
+    throw new Error(`Missing gateway env vars: ${missing}`);
   }
 
   const port = Number(parsed.data.GATEWAY_PORT ?? 4001);

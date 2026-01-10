@@ -414,6 +414,7 @@ Default: hour-slot only for take-home simplicity.
 ### phase 13 — Dashboard UI: table + filters + detail view
 Scope:
 - Required visibility.
+Status: [X] completed
 
 Tasks:
 - `/dashboard` page:
@@ -449,6 +450,7 @@ Manual verify:
 ### phase 14 — Gateway service v1: server scaffold + auth + /health
 Scope:
 - Build the gateway process that will later run worker + AppleScript.
+Status: [X] completed
 
 Tasks:
 - apps/gateway Node server (TypeScript):
@@ -472,6 +474,7 @@ Manual verify:
 ### phase 15 — Gateway service v2: AppleScript send + callback SENT/FAILED
 Scope:
 - Actually send iMessage.
+Status: [X] completed
 
 Tasks:
 - Implement AppleScript invocation:

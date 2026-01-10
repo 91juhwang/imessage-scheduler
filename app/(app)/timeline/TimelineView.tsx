@@ -116,7 +116,7 @@ export function TimelineView({ initialDateIso, initialMessages }: TimelineViewPr
     const scheduled = new Date(selectedDate);
     scheduled.setHours(hours, minutes, 0, 0);
 
-    if (scheduled.getTime() <= Date.now()) {
+    if (scheduled.getTime() <= Date.now() - 30 * 60 * 1000) {
       toast.error("Choose a future time slot.");
       return;
     }
