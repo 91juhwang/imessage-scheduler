@@ -52,7 +52,7 @@ export function TimelineSlotRow({
       </div>
       <div
         className={cn(
-          "px-3 py-2 transition-colors",
+          "px-3 py-2 transition-colors hover:cursor-pointer",
           isDragging && messages.length === 0 ? "border border-dashed border-indigo-200/70" : "",
           isDropTarget ? "border border-dashed border-indigo-400/70 bg-indigo-50/60" : "",
         )}
@@ -80,7 +80,7 @@ export function TimelineSlotRow({
         }}
         data-testid={`slot-${slotIndex}`}
       >
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 ">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -122,7 +122,7 @@ export function TimelineSlotRow({
             </div>
           ))}
           {messages.length === 0 ? (
-            <div className="text-[11px] text-zinc-300">
+            <div className="text-[11px] text-zinc-300 ">
               {isDropTarget ? "Drop to schedule" : "—"}
             </div>
           ) : null}
