@@ -239,6 +239,11 @@ If a message is disallowed by rate limit:
 - mark status FAILED
 - set last_error = rate_limit_reached
 
+Pre-queue guard:
+- When creating or rescheduling, the web app rejects with 429 if the current window is already fully reserved.
+- “Reserved” includes QUEUED or SENDING messages whose scheduled_for_utc falls within the current window.
+- This prevents scheduling more than the max-per-hour capacity inside the active window.
+
 ---
 
 ## Gateway Contract (Localhost)

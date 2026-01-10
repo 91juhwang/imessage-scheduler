@@ -4,6 +4,7 @@ import { CreateMessageInputSchema, normalizeUsPhone } from "@imessage-scheduler/
 import { getUserFromRequest } from "@/app/lib/auth/session";
 import {
   createMessage,
+  countPendingMessagesForUserInWindow,
   listMessagesForUser,
   type MessageStatus,
 } from "@/app/lib/db/models/message.model";
@@ -43,8 +44,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
   }
 
+  const now = new Date();
   const rateLimitRow = await getOrCreateRateLimitRow(user.id);
-  const decision = getRateLimitDecision(new Date(), rateLimitRow, user.paidUser);
+  const decision = getRateLimitDecision(now, rateLimitRow, user.paidUser);
   if (!decision.allowed) {
     return NextResponse.json(
       {
@@ -54,6 +56,30 @@ export async function POST(request: Request) {
       },
       { status: 429 },
     );
+  }
+
+  const windowStart = decision.normalized.windowStartedAt ?? now;
+  const windowEnd = new Date(windowStart.getTime() + 60 * 60 * 1000);
+  if (scheduledForUtc >= windowStart && scheduledForUtc <= windowEnd) {
+    const pendingCount = await countPendingMessagesForUserInWindow(
+      user.id,
+      windowStart,
+      windowEnd,
+    );
+    const remainingAfterPending = Math.max(
+      decision.remainingInWindow - pendingCount,
+      0,
+    );
+    if (remainingAfterPending <= 0) {
+      return NextResponse.json(
+        {
+          error: "rate_limit_reached",
+          reason: "MAX_PER_HOUR",
+          next_allowed_at: windowEnd.toISOString(),
+        },
+        { status: 429 },
+      );
+    }
   }
 
   const id = crypto.randomUUID();

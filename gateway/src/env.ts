@@ -2,7 +2,11 @@ import path from "node:path";
 import { config } from "dotenv";
 import { z } from "zod";
 
-config({ path: path.resolve(__dirname, "../../.env") });
+const envLocalPath = path.resolve(__dirname, "../../.env.local");
+const envPath = path.resolve(__dirname, "../../.env");
+
+config({ path: envLocalPath });
+config({ path: envPath });
 
 const EnvSchema = z.object({
   GATEWAY_SECRET: z.string().min(1),

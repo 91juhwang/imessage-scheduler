@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { UpdateMessageInputSchema, normalizeUsPhone } from "@imessage-scheduler/shared";
 import { getUserFromRequest } from "@/app/lib/auth/session";
 import {
+  countPendingMessagesForUserInWindow,
   getMessageById,
   updateMessageById,
 } from "@/app/lib/db/models/message.model";
@@ -56,17 +57,45 @@ export async function PATCH(
     return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
   }
 
-  const rateLimitRow = await getOrCreateRateLimitRow(user.id);
-  const decision = getRateLimitDecision(new Date(), rateLimitRow, user.paidUser);
-  if (!decision.allowed) {
-    return NextResponse.json(
-      {
-        error: "rate_limit_reached",
-        reason: decision.reason,
-        next_allowed_at: decision.nextAllowedAt?.toISOString() ?? null,
-      },
-      { status: 429 },
-    );
+  if (scheduledForUtc) {
+    const now = new Date();
+    const rateLimitRow = await getOrCreateRateLimitRow(user.id);
+    const decision = getRateLimitDecision(now, rateLimitRow, user.paidUser);
+    if (!decision.allowed) {
+      return NextResponse.json(
+        {
+          error: "rate_limit_reached",
+          reason: decision.reason,
+          next_allowed_at: decision.nextAllowedAt?.toISOString() ?? null,
+        },
+        { status: 429 },
+      );
+    }
+
+    const windowStart = decision.normalized.windowStartedAt ?? now;
+    const windowEnd = new Date(windowStart.getTime() + 60 * 60 * 1000);
+    if (scheduledForUtc >= windowStart && scheduledForUtc <= windowEnd) {
+      const pendingCount = await countPendingMessagesForUserInWindow(
+        user.id,
+        windowStart,
+        windowEnd,
+        message.id,
+      );
+      const remainingAfterPending = Math.max(
+        decision.remainingInWindow - pendingCount,
+        0,
+      );
+      if (remainingAfterPending <= 0) {
+        return NextResponse.json(
+          {
+            error: "rate_limit_reached",
+            reason: "MAX_PER_HOUR",
+            next_allowed_at: windowEnd.toISOString(),
+          },
+          { status: 429 },
+        );
+      }
+    }
   }
 
   await updateMessageById(message.id, {

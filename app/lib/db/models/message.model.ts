@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 
 import { getDb } from "../index";
 import { messages } from "../schema";
@@ -168,4 +168,29 @@ export async function listMessagesForUser(
     })
     .from(messages)
     .where(and(...conditions));
+}
+
+export async function countPendingMessagesForUserInWindow(
+  userId: string,
+  from: Date,
+  to: Date,
+  excludeMessageId?: string,
+) {
+  const conditions = [
+    eq(messages.userId, userId),
+    gte(messages.scheduledForUtc, from),
+    lte(messages.scheduledForUtc, to),
+    inArray(messages.status, ["QUEUED", "SENDING"]),
+  ];
+
+  if (excludeMessageId) {
+    conditions.push(ne(messages.id, excludeMessageId));
+  }
+
+  const rows = await getDb()
+    .select({ count: sql<number>`count(*)` })
+    .from(messages)
+    .where(and(...conditions));
+
+  return Number(rows[0]?.count ?? 0);
 }

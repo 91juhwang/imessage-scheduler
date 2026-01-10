@@ -168,4 +168,62 @@ describe.skipIf(!hasDatabase)("messages api", () => {
     const response = await POST(request);
     expect(response.status).toBe(429);
   });
+
+  it("blocks creation when pending messages fill the window", async () => {
+    const { POST } = await import("@/app/api/messages/route");
+
+    const userId = crypto.randomUUID();
+    const sessionId = crypto.randomUUID();
+
+    await createUser({
+      id: userId,
+      email: `test-${userId}@example.com`,
+      passwordHash: "hash",
+      paidUser: false,
+      createdAt: new Date(),
+    });
+
+    await createSessionRow({
+      id: sessionId,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+    });
+
+    const now = Date.now();
+    await createMessage({
+      id: crypto.randomUUID(),
+      userId,
+      toHandle: "+15551234567",
+      body: "first",
+      scheduledForUtc: new Date(now + 10 * 60 * 1000),
+      timezone: "UTC",
+    });
+
+    await createMessage({
+      id: crypto.randomUUID(),
+      userId,
+      toHandle: "+15551234567",
+      body: "second",
+      scheduledForUtc: new Date(now + 20 * 60 * 1000),
+      timezone: "UTC",
+    });
+
+    const request = new Request("http://localhost/api/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: authCookie(sessionId),
+      },
+      body: JSON.stringify({
+        to_handle: "555-123-4567",
+        body: "third",
+        scheduled_for_local: new Date(now + 30 * 60 * 1000).toISOString(),
+        timezone: "UTC",
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(429);
+  });
 });
