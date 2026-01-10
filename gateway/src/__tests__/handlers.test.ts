@@ -14,6 +14,8 @@ const env: GatewayEnv = {
   maxAttempts: 5,
   baseBackoffSeconds: 30,
   maxBackoffSeconds: 1800,
+  receiptPollIntervalMs: 10000,
+  receiptPollTimeoutMs: 1800000,
   freeMinIntervalSeconds: 0,
   paidMinIntervalSeconds: 0,
   freeMaxPerHour: 2,

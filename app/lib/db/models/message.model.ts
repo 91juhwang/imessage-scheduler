@@ -154,7 +154,7 @@ export async function listMessagesForUser(
     conditions.push(eq(messages.status, filters.status));
   }
 
-  return getDb()
+  const rows = await getDb()
     .select({
       id: messages.id,
       scheduledForUtc: messages.scheduledForUtc,
@@ -170,6 +170,11 @@ export async function listMessagesForUser(
     .from(messages)
     .where(and(...conditions))
     .orderBy(asc(messages.scheduledForUtc), asc(messages.createdAt));
+
+  return rows.map((row) => ({
+    ...row,
+    receiptCorrelation: row.receiptCorrelation as Record<string, unknown> | null,
+  }));
 }
 
 export async function countPendingMessagesForUserInWindow(

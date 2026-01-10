@@ -19,6 +19,7 @@ describe("worker helpers", () => {
     const rows = [
       {
         id: "b",
+        userId: "user-1",
         toHandle: "+1555",
         body: "b",
         scheduledForUtc: new Date("2025-01-02T10:00:00.000Z"),
@@ -27,6 +28,7 @@ describe("worker helpers", () => {
       },
       {
         id: "a",
+        userId: "user-1",
         toHandle: "+1555",
         body: "a",
         scheduledForUtc: new Date("2025-01-01T10:00:00.000Z"),
@@ -35,6 +37,7 @@ describe("worker helpers", () => {
       },
       {
         id: "c",
+        userId: "user-1",
         toHandle: "+1555",
         body: "c",
         scheduledForUtc: new Date("2025-01-01T10:00:00.000Z"),
