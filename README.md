@@ -3,7 +3,8 @@
 ## Steps to run
 
 ```bash
-pnpm i
+# installs both packages in ./ & ./gateway
+pnpm run setup
 ```
 
 #### 1) Start MySQL (required)
@@ -93,6 +94,3 @@ Seeded users:
 - `./db`
 - `./app/api/` API endpoints (auth, messages,  )
 
-## Future improvements:
-- Full event/audit log
-- Clean separation of “intent vs execution”
