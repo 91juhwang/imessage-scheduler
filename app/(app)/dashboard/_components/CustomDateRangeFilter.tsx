@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 
 type CustomDateRangeFilterProps = {
   customFrom: string;

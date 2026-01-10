@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardMessage, RateLimitResponse } from "./dashboard-types";
 import { CustomDateRangeFilter } from "./_components/CustomDateRangeFilter";
 import { DashboardDetailSheet } from "./_components/DashboardDetailSheet";

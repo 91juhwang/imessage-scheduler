@@ -2,13 +2,13 @@
 
 import { normalizeUsPhone } from "@imessage-scheduler/shared";
 
-import { Badge } from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/Sheet";
+} from "@/components/ui/sheet";
 import { formatDateTime, getStatusBadgeClass } from "../dashboard-helpers";
 import type { DashboardMessage } from "../dashboard-types";
 

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { Badge } from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/badge";
 import { getUserFromRequest } from "@/app/lib/auth/session";
 
 import { LogoutButton } from "./_components/LogoutButton";

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/Button";
-import { Calendar } from "@/components/ui/Calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { startOfDay } from "@/app/lib/date-utils";
 

@@ -6,9 +6,9 @@ import { ChevronDownIcon } from "lucide-react";
 
 import { formatUsPhoneDigits, normalizeUsPhone } from "@imessage-scheduler/shared";
 
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Calendar } from "@/components/ui/Calendar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -16,11 +16,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/Dialog";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
-import { Textarea } from "@/components/ui/Textarea";
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 
 import {
   formatDateKey,

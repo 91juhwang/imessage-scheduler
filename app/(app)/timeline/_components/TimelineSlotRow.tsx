@@ -3,8 +3,8 @@
 import { GripVertical } from "lucide-react";
 
 import { normalizeUsPhone } from "@imessage-scheduler/shared";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getStatusBadgeClass } from "@/app/lib/status-badge";
 import { cn } from "@/lib/utils";
 
