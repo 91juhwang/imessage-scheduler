@@ -149,7 +149,7 @@ Manual verify:
 ### phase 04 — DB schema: messages table + migrations
 Scope:
 - Single table that powers scheduling + queue.
-Status: [ ] in progress
+Status: [X] completed
 
 Tasks:
 - Add `messages` table with all fields from ARCHITECTURE.md.
@@ -172,6 +172,7 @@ Manual verify:
 ### phase 05 — Web auth API + auth utilities
 Scope:
 - Minimal session auth required for “multi-user per-user rate limit”.
+Status: [X] completed
 
 Tasks:
 - API routes:
@@ -206,6 +207,7 @@ Manual verify:
 ### phase 06 — Web messages API: create + list (scoped)
 Scope:
 - Backend endpoints for timeline and dashboard.
+Status: [ ] in progress
 
 Tasks:
 - `POST /api/messages`
