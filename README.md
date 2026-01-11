@@ -102,8 +102,3 @@ schedule → queued → worker → status callbacks → receipts
 - `packages/shared/` shared types, schemas, helpers
 - `docs/` Source of Truth & implementation plans
 - `app/lib/db` db logic including .models for shared db queries
-
-## Limitations
-- Works only in MacOS local
-- Needs full disk access for chat.db search
-- Smplicity approach for polling (just an interval loop, doesn't scale)
