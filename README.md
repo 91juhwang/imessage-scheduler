@@ -5,6 +5,13 @@ Local-only iMessage scheduler for macOS.
 2. Gateway sends via AppleScript
 3. Worker updates delivery status by reading `~/Library/Messages/chat.db`.
 
+## Objective
+This project was built to practice systems design under hard constraints, not to build another CRUD app.
+
+Because iMessage has no public API or delivery webhooks, the system is designed around time, state, and ownership of execution. A gateway worker polls, enforces FIFO ordering, applies locking for idempotency, and infers delivery status from local data instead of relying on events.
+
+The goal is to demonstrate reliable workflow design, polling vs event-driven tradeoffs, and stateful systems consideration when standard APIs don’t exist.
+
 ## Quick Start
 
 ### 1) Install dependencies (Node 22 required)
